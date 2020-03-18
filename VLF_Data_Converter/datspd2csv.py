@@ -25,10 +25,10 @@ import argparse
 from pathlib import Path
 from shutil import copyfile
 
-version = '2.1'
+version = '2.2'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
-input_path = '/Applications/Starbase.app/Contents/Resources/Java/workspace/samples'  # e.g '/Home/mark'
+input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
 output_path = '/Users/mark/Data_Converter'
 transverse = None  # transverse
 
@@ -73,7 +73,7 @@ elif args.v is not None and args.v >= 2:
     rsp_chunk_debug = True
     jc_chunk_debug = True
 else:
-    debug = 0
+    debug = 2
 
 
 def dd2dms(type, dd):
@@ -307,101 +307,104 @@ def john_cook_data(filename, debug):
 
             # If byte_one is 0xFF and bit_order is LOW then we could have the end of the file.
             # The old data format doesn't use this it has a \r\n at EOF ....
-            if byte_one[0] == 0xFF:
+            try:
+                if byte_one[0] == 0xFF:
 
-                # if the byte is 0xFF we could be at the end of the file so we'll check the next three bytes for 0xFF.
-                dat_file.seek(0, 1)
-                chunk = dat_file.read(3)
+                    # if the byte is 0xFF we could be at the end of the file so we'll check the next three bytes for 0xFF.
+                    dat_file.seek(0, 1)
+                    chunk = dat_file.read(3)
 
-                if jc_chunk_debug:
-                    print('DEBUG : EOF byte_one ', byte_one)
-                    print('DEBUG : EOF chunk ', chunk)
+                    if jc_chunk_debug:
+                        print('DEBUG : EOF byte_one ', byte_one)
+                        print('DEBUG : EOF chunk ', chunk)
 
-                # if the chunk is null then we have probably reach EOF and even if we haven't we can't continue.
-                if not chunk:
-                    break
+                    # if the chunk is null then we have probably reach EOF and even if we haven't we can't continue.
+                    if not chunk:
+                        break
 
-                # Fixed format may end with '\r\n>' but maybe not?? Otherwise we probably have Variable Format data so
-                # we look for the additonal 3 x 0xFF that indicate EOF.
-                if chunk == b'\r\n>':
-                    if jc_chunk_debug: print('DEBUG : EOF!')
-                    break
-                elif chunk[0] == 0xFF and chunk[1] == 0xFF and chunk[2] == 0xFF:
-                    if jc_chunk_debug: print('DEBUG : EOF!')
-                    break
+                    # Fixed format may end with '\r\n>' but maybe not?? Otherwise we probably have Variable Format data so
+                    # we look for the additonal 3 x 0xFF that indicate EOF.
+                    if chunk == b'\r\n>':
+                        if jc_chunk_debug: print('DEBUG : EOF!')
+                        break
+                    elif chunk[0] == 0xFF and chunk[1] == 0xFF and chunk[2] == 0xFF:
+                        if jc_chunk_debug: print('DEBUG : EOF!')
+                        break
 
-            elif (byte_one[0] & 0x80) == 0x80:
+                elif (byte_one[0] & 0x80) == 0x80:
 
-                dat_file.seek(0,1)
-                chunk = dat_file.read(3)
+                    dat_file.seek(0,1)
+                    chunk = dat_file.read(3)
 
-                date_stamp_minute = int(byte_one[0] & 0x7F)  # Encoded Most Significant Bit First.
-                date_stamp_hour = int(chunk[0])
-                date_stamp_day = int(chunk[1])
-                date_stamp_month = int(chunk[2])
+                    date_stamp_minute = int(byte_one[0] & 0x7F)  # Encoded Most Significant Bit First.
+                    date_stamp_hour = int(chunk[0])
+                    date_stamp_day = int(chunk[1])
+                    date_stamp_month = int(chunk[2])
 
-                if jc_chunk_debug:
-                    print('DEBUG : =========================================')
-                    print('DEBUG : date_stamp_minute = ', date_stamp_minute)
-                    print('DEBUG : date_stamp_hour = ', date_stamp_hour)
-                    print('DEBUG : date_stamp_day = ', date_stamp_day)
-                    print('DEBUG : date_stamp_month = ', date_stamp_month)
+                    if jc_chunk_debug:
+                        print('DEBUG : =========================================')
+                        print('DEBUG : date_stamp_minute = ', date_stamp_minute)
+                        print('DEBUG : date_stamp_hour = ', date_stamp_hour)
+                        print('DEBUG : date_stamp_day = ', date_stamp_day)
+                        print('DEBUG : date_stamp_month = ', date_stamp_month)
 
-                # We store the hourly timestamp so we can increment the sample date and time later.
-                hourly_timestamp = datetime.datetime(observation_year, date_stamp_month, date_stamp_day,
-                                                     date_stamp_hour, date_stamp_minute)
+                    # We store the hourly timestamp so we can increment the sample date and time later.
+                    hourly_timestamp = datetime.datetime(observation_year, date_stamp_month, date_stamp_day,
+                                                         date_stamp_hour, date_stamp_minute)
 
-            else:
-
-                # As we got this far then we expect byte_one to be the seconds identifier.
-                time_seconds = int(byte_one[0])
-
-                # Check we actually have the seconds identifier if not we'll bail as
-                # whatever we have doesn't make sense.
-                if time_seconds > 59:
-                    break
-
-                # Convert our hourly_timestamp to string format so we can append the current second identifier to it and
-                # prefix any single digit second identifier with zero.
-                data_datetime = hourly_timestamp.strftime('%Y-%m-%d,%H:%M:') + str(time_seconds).zfill(2)
-
-                # Now let's convert our above timestamp back to a datetime object.
-                data_datetime_object = datetime.datetime.strptime(data_datetime, '%Y-%m-%d,%H:%M:%S')
-
-                # Increment the data_datatime_object by sample_interval
-                data_datetime_object += datetime.timedelta(seconds=sample_interval)
-
-                # If minutes of data_datatime_object is greater than hourly_timestamp then increase hourly_timestamp
-                # minutes by one minute.
-                if hourly_timestamp.minute < data_datetime_object.minute:
-                    hourly_timestamp += datetime.timedelta(seconds=60)
-
-                # Now read the next n bytes as denoted by the number of channels from the current position in the file.
-                dat_file.seek(0,1)
-
-                chunk = dat_file.read(number_of_channels)
-
-                # Check chunk is the correct size, if it isn't we've probably reached the EOF!
-                if len(chunk) != number_of_channels:
-                    break
                 else:
-                    # Get the actual channel samples.
-                    for i in range(0, number_of_channels):
-                        data_samples = data_samples + str(chunk[i]) + ','
 
-                    # strip final comma as it's unwanted.
-                    data_samples = data_samples.rstrip(',')
+                    # As we got this far then we expect byte_one to be the seconds identifier.
+                    time_seconds = int(byte_one[0])
 
-                    # prefix csv_datetime to data_samples.
-                    data_samples = data_datetime + data_samples
+                    # Check we actually have the seconds identifier if not we'll bail as
+                    # whatever we have doesn't make sense.
+                    if time_seconds > 59:
+                        break
 
-                    if jc_chunk_debug: print('DEBUG : data_sample = ', data_samples)
+                    # Convert our hourly_timestamp to string format so we can append the current second identifier to it and
+                    # prefix any single digit second identifier with zero.
+                    data_datetime = hourly_timestamp.strftime('%Y-%m-%d,%H:%M:') + str(time_seconds).zfill(2)
 
-                    # Append data_samples to csv_data which is were our process data is stored.
-                    csv_data.append(data_samples)
+                    # Now let's convert our above timestamp back to a datetime object.
+                    data_datetime_object = datetime.datetime.strptime(data_datetime, '%Y-%m-%d,%H:%M:%S')
 
-                    # Set data samples ready to accept next csv_datetime and samples.
-                    data_samples = ','
+                    # Increment the data_datatime_object by sample_interval
+                    data_datetime_object += datetime.timedelta(seconds=sample_interval)
+
+                    # If minutes of data_datatime_object is greater than hourly_timestamp then increase hourly_timestamp
+                    # minutes by one minute.
+                    if hourly_timestamp.minute < data_datetime_object.minute:
+                        hourly_timestamp += datetime.timedelta(seconds=60)
+
+                    # Now read the next n bytes as denoted by the number of channels from the current position in the file.
+                    dat_file.seek(0,1)
+
+                    chunk = dat_file.read(number_of_channels)
+
+                    # Check chunk is the correct size, if it isn't we've probably reached the EOF!
+                    if len(chunk) != number_of_channels:
+                        break
+                    else:
+                        # Get the actual channel samples.
+                        for i in range(0, number_of_channels):
+                            data_samples = data_samples + str(chunk[i]) + ','
+
+                        # strip final comma as it's unwanted.
+                        data_samples = data_samples.rstrip(',')
+
+                        # prefix csv_datetime to data_samples.
+                        data_samples = data_datetime + data_samples
+
+                        if jc_chunk_debug: print('DEBUG : data_sample = ', data_samples)
+
+                        # Append data_samples to csv_data which is were our process data is stored.
+                        csv_data.append(data_samples)
+
+                        # Set data samples ready to accept next csv_datetime and samples.
+                        data_samples = ','
+            except IndexError as err:
+                break
 
     dat_file.close()
 
