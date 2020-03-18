@@ -1,4 +1,4 @@
-# VLF Data Converter Tool - Version 2
+# VLF Data Converter Tool - Version 2.1
 # Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
 #
 # This file is part of VLF Data Converter Tool.
@@ -25,6 +25,8 @@ import argparse
 from pathlib import Path
 from shutil import copyfile
 
+version = '2.1'
+
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Applications/Starbase.app/Contents/Resources/Java/workspace/samples'  # e.g '/Home/mark'
 output_path = '/Users/mark/Data_Converter'
@@ -50,8 +52,15 @@ parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -v
                                                       'You may want to redirect stdout to a file as -vv is '
                                                       'very verbose')
 
+# command line argument to transverse the input path.
+parser.add_argument('-V', '--V', action='store_true', help='Print version number.')
+
 # create the argument handler object
 args = parser.parse_args()
+
+if args.V:
+    print('VLF data converter, version %s' % version)
+    exit(0)
 
 # Set debugging from command line.
 if args.v is not None and args.v == 1:
