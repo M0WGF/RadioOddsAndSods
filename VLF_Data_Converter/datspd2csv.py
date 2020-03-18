@@ -73,7 +73,7 @@ elif args.v is not None and args.v >= 2:
     rsp_chunk_debug = True
     jc_chunk_debug = True
 else:
-    debug = 2
+    debug = 0
 
 
 def dd2dms(type, dd):
