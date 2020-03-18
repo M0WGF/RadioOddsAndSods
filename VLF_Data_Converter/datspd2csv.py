@@ -39,6 +39,9 @@ parser.add_argument('-i', '--i', dest='indir', help='Input files directory. This
 # command line argument that takes the path where the output files go
 parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. This will override the hardcoded path.')
 
+# command line argument that takes the path where the output files go
+parser.add_argument('-p', '--p', action='store_true', help='Save output files to original input directory.')
+
 # command line argument to transverse the input path.
 parser.add_argument('-t', '--t', action='store_true', help='transverse input path subdirectories.')
 
