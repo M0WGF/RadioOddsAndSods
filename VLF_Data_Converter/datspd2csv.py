@@ -954,10 +954,10 @@ def radio_sky_pipe(filename, debug):
 
     except FileNotFoundError as err:
         print('ERROR : File Error = ', err)
-        return False
+        return False, None
     except struct.error as err:
         print('ERROR : Unpack Error = ', err)
-        return False
+        return False, None
 
     # File format
     file_format = 'RadioSkyPipe'
