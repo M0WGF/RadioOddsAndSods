@@ -25,7 +25,7 @@ import argparse
 from pathlib import Path
 from shutil import copyfile
 
-version = '2.2'
+version = '2.3'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
