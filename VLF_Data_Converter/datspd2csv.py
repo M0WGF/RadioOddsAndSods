@@ -1002,7 +1002,7 @@ def main():
 
     # Check output folder exists.
     try:
-        if not os.path.exists(output):
+        if not os.path.exists(output) and not args.p:
             print("\r\nWARNING : Output directory doesn't exist so creating it....")
             os.makedirs(output)
     except OSError as error:
@@ -1052,16 +1052,23 @@ def main():
             print('WARNING : File is already in CSV format %s' % i)
             # Get original filename
             original_filename = os.path.basename(os.path.normpath(i))
-            # prefix output path with new_filename
-            out_file = os.path.join(output, original_filename)
 
-            try:
-                copyfile(i, out_file)
-            except OSError as err:
-                print('ERROR : Unable to move %s %s' % (original_filename, err))
-                print()
+            # Either output new file to new path or preserve file path.
+            if not args.p:
+                # prefix output path with new_filename
+                out_file = os.path.join(output, original_filename)
+
+                try:
+                    copyfile(i, out_file)
+                except OSError as err:
+                    print('ERROR : Unable to move %s %s' % (original_filename, err))
+                    print()
+                else:
+                    print('INFO : Moved file %s to %s' % (original_filename, out_file))
+
             else:
-                print('INFO : Moved file %s to %s' % (original_filename, out_file))
+                # As the file already exists in this file path we do nothing.
+                pass
 
         if i.endswith('.dat'):
             status, data = john_cook_data(i, debug)
@@ -1073,8 +1080,14 @@ def main():
                 original_filename = os.path.basename(os.path.normpath(i))
                 # Rename file with new suffix
                 new_filename = Path(original_filename).stem + ".csv"
-                # prefix output path with new_filename
-                out_file = os.path.join(output, new_filename)
+
+                # Either output new file to new path or preserve file path.
+                if not args.p:
+                    # prefix output path with new_filename
+                    out_file = os.path.join(output, new_filename)
+                else:
+                    # prefix original path with new_filename
+                    out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
 
         if i.endswith('.spd'):
             status, data = radio_sky_pipe(i, debug)
@@ -1086,8 +1099,14 @@ def main():
                 original_filename = os.path.basename(os.path.normpath(i))
                 # Rename file with new suffix
                 new_filename = Path(original_filename).stem + ".csv"
-                # prefix output path with new_filename
-                out_file = os.path.join(output, new_filename)
+
+                # Either output new file to new path or preserve file path.
+                if not args.p:
+                    # prefix output path with new_filename
+                    out_file = os.path.join(output, new_filename)
+                else:
+                    # prefix original path with new_filename
+                    out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
 
         # If process_data is true we can give it ago at creating the metadata and then creating the csv file.
         if process_data:
