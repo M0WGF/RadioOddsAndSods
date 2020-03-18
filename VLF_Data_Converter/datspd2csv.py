@@ -123,6 +123,19 @@ def doubledt_2_stddt(dd_date):
     return dt - datetime.timedelta(microseconds=dt.microsecond)  # This timedelta rounds to the nearest second.
 
 
+def stardata(filename, debug):
+    '''
+    Translates Stardata to CSV
+
+    This function will decode date encoded in the Stardata format as used in Starbase.
+
+    :param filename: including full path.
+    :param debug: integer 0 - 2 with 0 being no debugs, 1 debugging on and 2 verbose debugs.
+    :return: tuple <boolean, list>
+    '''
+    pass
+
+
 def john_cook_data(filename, debug):
     '''
     # John Cooks data file get the date from the filename.
@@ -403,7 +416,7 @@ def john_cook_data(filename, debug):
 
                         # Set data samples ready to accept next csv_datetime and samples.
                         data_samples = ','
-            except IndexError as err:
+            except(IndexError, ValueError) as err:
                 break
 
     dat_file.close()
