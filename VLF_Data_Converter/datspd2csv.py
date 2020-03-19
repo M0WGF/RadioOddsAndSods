@@ -45,12 +45,12 @@ parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. Th
 parser.add_argument('-p', '--p', action='store_true', help='Save output files to original input directory.')
 
 # command line argument to transverse the input path.
-parser.add_argument('-t', '--t', action='store_true', help='transverse input path subdirectories.')
+parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories.')
 
 # command line argument to enable debugging
-parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -vv for really verbose debugs. \n\r '
+parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -vv for really verbose debugs.'
                                                       'You may want to redirect stdout to a file as -vv is '
-                                                      'very verbose')
+                                                      'very verbose.')
 
 # command line argument to transverse the input path.
 parser.add_argument('-V', '--V', action='store_true', help='Print version number.')
