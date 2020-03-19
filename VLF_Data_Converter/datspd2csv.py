@@ -1,4 +1,4 @@
-# VLF Data Converter Tool - Version 2.1
+# VLF Data Converter Tool - Version 2.4
 # Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
 #
 # This file is part of VLF Data Converter Tool.
@@ -25,7 +25,7 @@ import argparse
 from pathlib import Path
 from shutil import copyfile
 
-version = '2.3'
+version = '2.4'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
@@ -309,6 +309,12 @@ def john_cook_data(filename, debug):
         # Simple way to break loop without errors.
         main_loop = True
 
+        # Set hourly timestamp to none so we can use it to skip data if we haven't seen a timestamp
+        hourly_timestamp = None
+
+        # CSV_DATA line counter.
+        csv_line_counter = 0
+
         # Main loop
         while main_loop:
 
@@ -354,7 +360,7 @@ def john_cook_data(filename, debug):
                     date_stamp_day = int(chunk[1])
                     date_stamp_month = int(chunk[2])
 
-                    if jc_chunk_debug:
+                    if jc_debug:
                         print('DEBUG : =========================================')
                         print('DEBUG : date_stamp_minute = ', date_stamp_minute)
                         print('DEBUG : date_stamp_hour = ', date_stamp_hour)
@@ -367,64 +373,79 @@ def john_cook_data(filename, debug):
 
                 else:
 
-                    # As we got this far then we expect byte_one to be the seconds identifier.
-                    time_seconds = int(byte_one[0])
+                    if hourly_timestamp is not None:
+                        # As we got this far then we expect byte_one to be the seconds identifier.
+                        time_seconds = int(byte_one[0])
 
-                    # Check we actually have the seconds identifier if not we'll bail as
-                    # whatever we have doesn't make sense.
-                    if time_seconds > 59:
-                        break
+                        # Check we actually have the seconds identifier if not we'll bail as
+                        # whatever we have doesn't make sense.
+                        if time_seconds > 59:
+                            break
 
-                    # Convert our hourly_timestamp to string format so we can append the current second identifier to it and
-                    # prefix any single digit second identifier with zero.
-                    data_datetime = hourly_timestamp.strftime('%Y-%m-%d,%H:%M:') + str(time_seconds).zfill(2)
+                        # Convert our hourly_timestamp to string format so we can append the current second identifier to it and
+                        # prefix any single digit second identifier with zero.
+                        data_datetime = hourly_timestamp.strftime('%Y-%m-%d,%H:%M:') + str(time_seconds).zfill(2)
 
-                    # Now let's convert our above timestamp back to a datetime object.
-                    data_datetime_object = datetime.datetime.strptime(data_datetime, '%Y-%m-%d,%H:%M:%S')
+                        # Now let's convert our above timestamp back to a datetime object.
+                        data_datetime_object = datetime.datetime.strptime(data_datetime, '%Y-%m-%d,%H:%M:%S')
 
-                    # Increment the data_datatime_object by sample_interval
-                    data_datetime_object += datetime.timedelta(seconds=sample_interval)
+                        # Increment the data_datatime_object by sample_interval
+                        data_datetime_object += datetime.timedelta(seconds=sample_interval)
 
-                    # If minutes of data_datatime_object is greater than hourly_timestamp then increase hourly_timestamp
-                    # minutes by one minute.
-                    if hourly_timestamp.minute < data_datetime_object.minute:
-                        hourly_timestamp += datetime.timedelta(seconds=60)
+                        # If minutes of data_datatime_object is greater than hourly_timestamp then increase hourly_timestamp
+                        # minutes by one minute.
+                        if hourly_timestamp.minute < data_datetime_object.minute:
+                            hourly_timestamp += datetime.timedelta(seconds=60)
 
-                    # Now read the next n bytes as denoted by the number of channels from the current position in the file.
-                    dat_file.seek(0,1)
+                        # Now read the next n bytes as denoted by the number of channels from the current position in the file.
+                        dat_file.seek(0,1)
 
-                    chunk = dat_file.read(number_of_channels)
+                        chunk = dat_file.read(number_of_channels)
 
-                    # Check chunk is the correct size, if it isn't we've probably reached the EOF!
-                    if len(chunk) != number_of_channels:
-                        break
-                    else:
-                        # Get the actual channel samples.
-                        for i in range(0, number_of_channels):
-                            data_samples = data_samples + str(chunk[i]) + ','
+                        # Check chunk is the correct size, if it isn't we've probably reached the EOF!
+                        if len(chunk) != number_of_channels:
+                            break
+                        else:
+                            # Get the actual channel samples.
+                            for i in range(0, number_of_channels):
+                                data_samples = data_samples + str(chunk[i]) + ','
 
-                        # strip final comma as it's unwanted.
-                        data_samples = data_samples.rstrip(',')
+                            # strip final comma as it's unwanted.
+                            data_samples = data_samples.rstrip(',')
 
-                        # prefix csv_datetime to data_samples.
-                        data_samples = data_datetime + data_samples
+                            # prefix csv_datetime to data_samples.
+                            data_samples = data_datetime + data_samples
 
-                        if jc_chunk_debug: print('DEBUG : data_sample = ', data_samples)
+                            if jc_chunk_debug: print('DEBUG : data_sample = ', data_samples)
 
-                        # Append data_samples to csv_data which is were our process data is stored.
-                        csv_data.append(data_samples)
+                            # Append data_samples to csv_data which is were our process data is stored.
+                            csv_data.append(data_samples)
 
-                        # Set data samples ready to accept next csv_datetime and samples.
-                        data_samples = ','
+                            # Set data samples ready to accept next csv_datetime and samples.
+                            data_samples = ','
+
+                            # increment csv_line_counter
+                            csv_line_counter += 1
+
             except(IndexError, ValueError) as err:
                 break
 
     dat_file.close()
 
+    # The total length of the expected metadata keys.
+    metadata_len = number_of_channels * 2 + 6
+    # The total length of the CSV data plus the metadata
+    calculated_csv_data_length = csv_line_counter + metadata_len
+
+    if jc_debug:
+        print('DEBUG : Calculated CVS data length : %s' % calculated_csv_data_length)
+        print('DEBUG : CVS data list length : %s' % len(csv_data))
+
     # If csv_data length is not zero then we look like we have some data so we return True
-    if len(csv_data) != 0:
+    if len(csv_data) == calculated_csv_data_length:
         return True, csv_data
     else:
+        print('ERROR : Calculated CVS data length is not equal to list length')
         return False, None
 
 
