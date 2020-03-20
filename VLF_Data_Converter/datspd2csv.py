@@ -27,7 +27,7 @@ from shutil import copyfile
 import xml.etree.ElementTree as eTree
 import sys
 
-stardev = True  # Just a param to allow processing of stardata, will remove once code is working.
+stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
 version = '2.6'
 
