@@ -488,7 +488,7 @@ def john_cook_data(filename, debug):
 
         return True, csv_list
     else:
-        print('ERROR : Calculated CVS data length is not equal to list length')
+        print('ERROR : Unable to decode any data!!!')
         return False, None
 
 
@@ -1085,6 +1085,7 @@ def radio_sky_pipe(filename, debug):
 
         return True, csv_list
     else:
+        print('ERROR : Unable to decode any data!!!')
         return False, None
 
 
