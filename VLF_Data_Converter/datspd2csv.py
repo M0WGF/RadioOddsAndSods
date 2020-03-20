@@ -198,8 +198,17 @@ def john_cook_data(filename, debug):
         jc_debug = False
         jc_chunk_debug = False
 
-    # CSV Data list
-    csv_data = []
+    # Data list
+    data_list = []
+
+    # Metadata list
+    metadata_list = []
+
+    # CSV list
+    csv_list = []
+
+    # # CSV Data list
+    # csv_data = []
 
     if jc_debug: print('DEBUG : John Cook Dat Converter')
 
@@ -318,27 +327,27 @@ def john_cook_data(filename, debug):
 
         # Create Metadata
 
-        csv_data.append('Instrument.Importer.Format,JohnCook Data File')
+        metadata_list.append('Instrument.Importer.Format,JohnCook Data File')
 
-        csv_data.append('Observer.Name,John Cook')
+        metadata_list.append('Observer.Name,John Cook')
 
-        csv_data.append('Observatory.Name,John Cook Observatory')
+        metadata_list.append('Observatory.Name,John Cook Observatory')
 
-        csv_data.append('Observation.Notes,Replace this text with information about your observatory.')
+        metadata_list.append('Observation.Notes,Replace this text with information about your observatory.')
 
-        csv_data.append('Observation.Channel.Count,' + str(number_of_channels))
+        metadata_list.append('Observation.Channel.Count,' + str(number_of_channels))
 
         n = 0
         for i in range(0, number_of_channels):
-            csv_data.append('Observation.Channel.Name.%s,%s %s' % (str(n), 'Channel', str(n)))
+            metadata_list.append('Observation.Channel.Name.%s,%s %s' % (str(n), 'Channel', str(n)))
             n += 1
 
         n = 0
         for i in range(0, number_of_channels):
-            csv_data.append('Observation.Axis.Label.Y.%s,%s %s' % (str(n), 'Y Axis', str(n)))
+            metadata_list.append('Observation.Axis.Label.Y.%s,%s %s' % (str(n), 'Y Axis', str(n)))
             n += 1
 
-        csv_data.append('Observation.Axis.Label.X,Time UTC')
+        metadata_list.append('Observation.Axis.Label.X,Time UTC')
 
         # Data sample string
         data_samples = ','
@@ -348,9 +357,6 @@ def john_cook_data(filename, debug):
 
         # Set hourly timestamp to none so we can use it to skip data if we haven't seen a timestamp
         hourly_timestamp = None
-
-        # CSV_DATA line counter.
-        csv_line_counter = 0
 
         # Main loop
         while main_loop:
@@ -456,31 +462,31 @@ def john_cook_data(filename, debug):
                             if jc_chunk_debug: print('DEBUG : data_sample = ', data_samples)
 
                             # Append data_samples to csv_data which is were our process data is stored.
-                            csv_data.append(data_samples)
+                            data_list.append(data_samples)
 
                             # Set data samples ready to accept next csv_datetime and samples.
                             data_samples = ','
 
                             # increment csv_line_counter
-                            csv_line_counter += 1
+                            # csv_line_counter += 1
 
             except(IndexError, ValueError) as err:
                 break
 
     dat_file.close()
 
-    # The total length of the expected metadata keys.
-    metadata_len = number_of_channels * 2 + 6
-    # The total length of the CSV data plus the metadata
-    calculated_csv_data_length = csv_line_counter + metadata_len
-
     if jc_debug:
-        print('DEBUG : Calculated CVS data length : %s' % calculated_csv_data_length)
-        print('DEBUG : CVS data list length : %s' % len(csv_data))
+        print('DEBUG : Data list length : %s' % len(data_list))
 
     # If csv_data length is not zero then we look like we have some data so we return True
-    if len(csv_data) == calculated_csv_data_length:
-        return True, csv_data
+    if len(data_list) != 0 and len(metadata_list) != 0:
+        for i in metadata_list:
+            csv_list.append(i)
+
+        for i in data_list:
+            csv_list.append(i)
+
+        return True, csv_list
     else:
         print('ERROR : Calculated CVS data length is not equal to list length')
         return False, None
