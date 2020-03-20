@@ -514,8 +514,14 @@ def radio_sky_pipe(filename, debug):
         rsp_debug = False
         rsp_chunk_debug = False
 
-    # CSV Data list
-    csv_data = []
+    # Data list
+    data_list = []
+
+    # Metadata list
+    metadata_list = []
+
+    # CSV list
+    csv_list =[]
 
     # Channel labels list
     channel_labels = []
@@ -880,70 +886,70 @@ def radio_sky_pipe(filename, debug):
 
             ''' Create Metadata ...'''
 
-            csv_data.append('Instrument.Importer.Format,RadioSkyPipe')
+            metadata_list.append('Instrument.Importer.Format,RadioSkyPipe')
 
             if len(version) != 0:
-                csv_data.append('Rsp.Version,' + str(version))
+                metadata_list.append('Rsp.Version,' + str(version))
 
             if len(author) == 0:
-                csv_data.append('Observer.Name,UNKNOWN')
+                metadata_list.append('Observer.Name,UNKNOWN')
             else:
-                csv_data.append('Observer.Name,' + str(author))
+                metadata_list.append('Observer.Name,' + str(author))
 
             if len(localname) == 0:
-                csv_data.append('Observatory.Name,UNKNOWN')
+                metadata_list.append('Observatory.Name,UNKNOWN')
             else:
-                csv_data.append('Observatory.Name,' + str(localname))
+                metadata_list.append('Observatory.Name,' + str(localname))
 
             if len(location) == 0:
-                csv_data.append('Observatory.Location,UNKNOWN')
+                metadata_list.append('Observatory.Location,UNKNOWN')
             else:
-                csv_data.append('Observatory.Location,' + str(location))
+                metadata_list.append('Observatory.Location,' + str(location))
 
             if len(latitude) == 0:
-                csv_data.append('Observatory.Latitude,UNKNOWN')
+                metadata_list.append('Observatory.Latitude,UNKNOWN')
             else:
-                csv_data.append('Observatory.Latitude,' + str(latitude))
+                metadata_list.append('Observatory.Latitude,' + str(latitude))
 
             if len(longitude) == 0:
-                csv_data.append('Observatory.Longitude,UNKNOWN')
+                metadata_list.append('Observatory.Longitude,UNKNOWN')
             else:
-                csv_data.append('Observatory.Longitude,' + str(longitude))
+                metadata_list.append('Observatory.Longitude,' + str(longitude))
 
             if len(observation_note) == 0:
-                csv_data.append('Observation.Notes,Replace this text with information about your observatory.')
+                metadata_list.append('Observation.Notes,Replace this text with information about your observatory.')
             else:
-                csv_data.append('Observation.Notes,' + str(observation_note))
+                metadata_list.append('Observation.Notes,' + str(observation_note))
 
-            csv_data.append('Observation.Channel.Count,' + str(number_of_channels))
+            metadata_list.append('Observation.Channel.Count,' + str(number_of_channels))
 
             n = 0
             if len(channel_labels) == 0:
                 for i in range(0, number_of_channels):
-                    csv_data.append('Observation.Channel.Name.%s,%s %s' % (str(n), 'Channel', str(n)))
+                    metadata_list.append('Observation.Channel.Name.%s,%s %s' % (str(n), 'Channel', str(n)))
                     n += 1
             else:
                 for i in channel_labels:
-                    csv_data.append('Observation.Channel.Name.%s,%s' % (str(n), str(i)))
+                    metadata_list.append('Observation.Channel.Name.%s,%s' % (str(n), str(i)))
                     n += 1
 
             n = 0
             if len(y_axis_labels) == 0:
                 for i in range(0, number_of_channels):
-                    csv_data.append('Observation.Axis.Label.Y.%s,%s %s' % (str(n), 'Y Axis', str(n)))
+                    metadata_list.append('Observation.Axis.Label.Y.%s,%s %s' % (str(n), 'Y Axis', str(n)))
                     n += 1
             else:
                 for i in y_axis_labels:
-                    csv_data.append('Observation.Axis.Label.Y.%s,%s' % (str(n), str(i)))
+                    metadata_list.append('Observation.Axis.Label.Y.%s,%s' % (str(n), str(i)))
                     n += 1
 
             if len(x_axis_label) == 0:
-                csv_data.append('Observation.Axis.Label.X,Time UTC')
+                metadata_list.append('Observation.Axis.Label.X,Time UTC')
             else:
-                csv_data.append('Observation.Axis.Label.X,' + str(x_axis_label))
+                metadata_list.append('Observation.Axis.Label.X,' + str(x_axis_label))
 
             if len(source) != 0:
-                csv_data.append('Rsp.source,' + str(source))
+                metadata_list.append('Rsp.source,' + str(source))
 
             ''' Data Parser...'''
 
@@ -1045,7 +1051,7 @@ def radio_sky_pipe(filename, debug):
                     doubledt_2_stddt_status, doubledt_2_stddt_message = doubledt_2_stddt(date_double)
 
                     if doubledt_2_stddt_status:
-                        csv_data.append(str(doubledt_2_stddt_message).replace(' ', ',') + ',' + data_samples.rstrip(','))
+                        data_list.append(str(doubledt_2_stddt_message).replace(' ', ',') + ',' + data_samples.rstrip(','))
                     else:
                         print('WARNING : %s' % doubledt_2_stddt_message)
                         break
@@ -1064,8 +1070,14 @@ def radio_sky_pipe(filename, debug):
     file_format = 'RadioSkyPipe'
 
     # If csv_data length is not zero then we look like we have some data so we return True
-    if len(csv_data) != 0:
-        return True, csv_data
+    if len(data_list) != 0 and len(metadata_list) !=0:
+        for i in metadata_list:
+            csv_list.append(i)
+
+        for i in data_list:
+            csv_list.append(i)
+
+        return True, csv_list
     else:
         return False, None
 
