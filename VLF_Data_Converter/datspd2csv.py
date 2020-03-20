@@ -562,7 +562,14 @@ def radio_sky_pipe(filename, debug):
             ''' NOTE: Start / Finish times are not currently saved in csv file! '''
 
             # Call double to standard time function to convert double to normal time conventions.
-            start_time = doubledt_2_stddt(start_double)  # Data Start Time
+            doubledt_2_stddt_status, doubledt_2_stddt_message = doubledt_2_stddt(start_double)  # Data Start Time
+
+            if doubledt_2_stddt_status:
+                start_time = doubledt_2_stddt_message
+            else:
+                print('WARNING : %s' % doubledt_2_stddt_message)
+                start_time = 'Unknown'
+
 
             if rsp_debug: print('DEBUG : Start Double = ', start_double)
             if rsp_debug: print('DEBUG : Start Time = ', start_time)
@@ -579,7 +586,13 @@ def radio_sky_pipe(filename, debug):
             finish_double = struct.unpack('<d', finish_bytes)[0]
 
             # Call double to standard time function to convert double to normal time conventions.
-            finish_time = doubledt_2_stddt(finish_double)  # Data Finish Time
+            doubledt_2_stddt_status, doubledt_2_stddt_message = doubledt_2_stddt(finish_double)  # Data Finish Time
+
+            if doubledt_2_stddt_status:
+                finish_time = doubledt_2_stddt_message
+            else:
+                print('WARNING : %s' % doubledt_2_stddt_message)
+                finish_time = 'Unknown'
 
             if rsp_debug:
                 print('DEBUG : Finish Double = ', finish_double)
@@ -1029,8 +1042,13 @@ def radio_sky_pipe(filename, debug):
                 else:
 
                     # Append data to csv_data set.
-                    csv_data.append(
-                        str(doubledt_2_stddt(date_double)).replace(' ', ',') + ',' + data_samples.rstrip(','))
+                    doubledt_2_stddt_status, doubledt_2_stddt_message = doubledt_2_stddt(date_double)
+
+                    if doubledt_2_stddt_status:
+                        csv_data.append(str(doubledt_2_stddt_message).replace(' ', ',') + ',' + data_samples.rstrip(','))
+                    else:
+                        print('WARNING : %s' % doubledt_2_stddt_message)
+                        break
 
                     # Increment chunk number
                     chunk_number += 1
