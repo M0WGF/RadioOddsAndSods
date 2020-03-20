@@ -184,7 +184,7 @@ def john_cook_data(filename, debug):
 
     :param filename: including full path.
     :param debug: integer 0 - 2 with 0 being no debugs, 1 debugging on and 2 verbose debugs.
-    :return: tuple <boolean, list>
+    :return: tuple <boolean, 'error msg or list'>
     '''
 
     # set up debugging ...
@@ -503,7 +503,7 @@ def radio_sky_pipe(filename, debug):
 
     :param filename: including full path.
     :param debug: integer 0 - 2 with 0 being no debugs, 1 debugging on and 2 verbose debugs.
-    :return: tuple <boolean, list>
+    :return: tuple <boolean, 'error msg or list'>
     '''
 
     # Set up debugging
