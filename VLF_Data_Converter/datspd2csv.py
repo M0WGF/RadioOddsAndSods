@@ -29,7 +29,7 @@ import sys
 
 stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
-version = '2.6'
+version = '2.7'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
@@ -207,12 +207,9 @@ def john_cook_data(filename, debug):
     # CSV list
     csv_list = []
 
-    # # CSV Data list
-    # csv_data = []
-
     if jc_debug: print('DEBUG : John Cook Dat Converter')
 
-    print('INFO : Processing file %s' % filename)
+    if jc_debug: print('INFO : Processing file %s' % filename)
 
     # Split filename on system path delimiter
     filename_split = filename.split(str(os.path.sep))
@@ -237,14 +234,14 @@ def john_cook_data(filename, debug):
                 filename_date = '20' + filename_date
         else:
             # Date length isn't correct to return False.
-            print('ERROR : Unable to decipher the date for %s' % filename_split[-1])
-            return False
+            if jc_debug: print('ERROR : Unable to decipher the date for %s' % filename_split[-1])
+            return False, 'Unable to decipher the date'
 
     # Find the year and store as observation year we'll need this when creating the CSV file.
     try:
         observation_year = int(filename_date[:4])
-    except ValueError:
-        return False, None
+    except ValueError as err:
+        return False, err
 
     if jc_debug: print('DEBUG : observation_year = ', observation_year)
 
@@ -306,8 +303,8 @@ def john_cook_data(filename, debug):
             if number_of_channels > 0:
                 pass
             else:
-                print('ERROR : Number or channels is missing!!')
-                return False
+                if jc_debug: print('ERROR : Number or channels is missing!!')
+                return False, 'Number or channels is missing!!'
 
             # Seek from the current file position.
             dat_file.seek(0, 1)
@@ -488,8 +485,8 @@ def john_cook_data(filename, debug):
 
         return True, csv_list
     else:
-        print('ERROR : Unable to decode any data!!!')
-        return False, None
+        if jc_debug: print('ERROR : Unable to decode any data!!!')
+        return False, 'Unable to decode any data!!!'
 
 
 def radio_sky_pipe(filename, debug):
@@ -537,8 +534,6 @@ def radio_sky_pipe(filename, debug):
 
     if rsp_debug: print('DEBUG : Radio Sky Pipe Converter')
 
-    print('INFO : Processing file %s' % filename)
-
     try:
 
         # Open spd data file in binary mode.
@@ -582,11 +577,8 @@ def radio_sky_pipe(filename, debug):
                 print('WARNING : %s' % doubledt_2_stddt_message)
                 start_time = 'Unknown'
 
-
             if rsp_debug: print('DEBUG : Start Double = ', start_double)
             if rsp_debug: print('DEBUG : Start Time = ', start_time)
-
-            # TODO Use the start data to create the filename ....  observation_date
 
             # Seek from the current file position.
             spd_file.seek(0, 1)
@@ -752,8 +744,8 @@ def radio_sky_pipe(filename, debug):
             if number_of_channels > 0:
                 pass
             else:
-                print('ERROR : Number or channels is missing!!')
-                return False
+                if rsp_debug: print('DEBUG : Error -  Number or channels is missing!!')
+                return 'Number or channels is missing!!'
 
             if rsp_debug: print("DEBUG : Number of Channels  = ", str(number_of_channels))
 
@@ -837,7 +829,7 @@ def radio_sky_pipe(filename, debug):
                 pass
             else:
                 if rsp_debug: print('DEBUG : Error - Unable to make sense of SPD metadata')
-                return False
+                return False, 'Unable to make sense of SPD metadata'
 
             # We should now have a list of where item one should be the observation note text if not we create string.
             if len(RawNoteSplit[0]) > 1:
@@ -1059,21 +1051,18 @@ def radio_sky_pipe(filename, debug):
                     if doubledt_2_stddt_status:
                         data_list.append(str(doubledt_2_stddt_message).replace(' ', ',') + ',' + data_samples.rstrip(','))
                     else:
-                        print('WARNING : %s' % doubledt_2_stddt_message)
+                        if rsp_debug: print('DEBUG : Warning : %s' % doubledt_2_stddt_message)
                         break
 
                     # Increment chunk number
                     chunk_number += 1
 
     except FileNotFoundError as err:
-        print('ERROR : File Error = ', err)
-        return False, None
+        if rsp_debug: print('DEBUG : Error - File Error = ', err)
+        return False, err
     except struct.error as err:
-        print('ERROR : Unpack Error = ', err)
-        return False, None
-
-    # File format
-    file_format = 'RadioSkyPipe'
+        if rsp_debug: print('DEBUG : Error - Unpack Error = ', err)
+        return False, err
 
     # If csv_data length is not zero then we look like we have some data so we return True
     if len(data_list) != 0 and len(metadata_list) !=0:
@@ -1085,8 +1074,8 @@ def radio_sky_pipe(filename, debug):
 
         return True, csv_list
     else:
-        print('ERROR : Unable to decode any data!!!')
-        return False, None
+        if rsp_debug: print('DEBUG : Error - Unable to decode any data!!!')
+        return False, 'Unable to decode any data!!!'
 
 
 def main():
@@ -1102,12 +1091,12 @@ def main():
             home = args.indir
         else:
             print('\r\nERROR : Please specify location where files to be processed resides - bailing!!')
-            return
+            exit(1)
 
     # Checking the input folder exists if not bail!.
     if not os.path.exists(input_path):
         print('\r\nERROR : Files to be processed location doesn\'t exist - bailing!!')
-        return
+        exit(1)
 
     # Set the location where the files we've processed will be stored, specified
     # either by the output_path variable or -o arg.
@@ -1118,7 +1107,7 @@ def main():
             output = args.outdir
         else:
             print('\r\nERROR : Please specify processed file output folder - bailing!!')
-            return
+            exit(1)
 
     # Check output folder exists.
     try:
@@ -1127,7 +1116,7 @@ def main():
             os.makedirs(output)
     except OSError as error:
         print('\r\nERROR : Unable to create output folder %s ' % error)
-        return
+        exit(1)
 
     # Set transverse either or true or false based on -t arg
     if transverse is not None:
@@ -1159,7 +1148,7 @@ def main():
     # Check files_2b_processed isn't empty.
     if len(files_2b_processed) == 0:
         print('WARNING : No Files Found!! - Bailing.')
-        return
+        exit(1)
 
     for i in files_2b_processed:
         # Reset the metadata and clear the csv_data list
@@ -1192,10 +1181,11 @@ def main():
 
         # Process John Cook data file.
         if i.endswith('.dat'):
+            print('INFO : Processing file : %s' % i)
             # Call john_cook_data function with filename and debug level
             status, data = john_cook_data(i, debug)
             if not status:
-                print('WARNING : Unable to process %s' % i)
+                print('WARNING : Unable to process %s' % data)
             else:
                 process_data = True
                 # Get original filename
@@ -1205,18 +1195,19 @@ def main():
 
                 # Either output new file to new path or preserve file path.
                 if not args.p:
-                    # prefix output path with new_filename
+                    # suffix output path with new_filename
                     out_file = os.path.join(output, new_filename)
                 else:
-                    # prefix original path with new_filename
+                    # suffix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
 
         # Process Radio SkyPipe file.
         if i.endswith('.spd'):
+            print('INFO : Processing file : %s' % i)
             # Call radio_sky_pipe function with filename and debug level
             status, data = radio_sky_pipe(i, debug)
             if not status:
-                print('WARNING : Unable to process %s' % i)
+                print('WARNING : Unable to process %s' % data)
             else:
                 process_data = True
                 # Get original filename
@@ -1226,15 +1217,16 @@ def main():
 
                 # Either output new file to new path or preserve file path.
                 if not args.p:
-                    # prefix output path with new_filename
+                    # suffix output path with new_filename
                     out_file = os.path.join(output, new_filename)
                 else:
-                    # prefix original path with new_filename
+                    # suffix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
 
         # Process Starbase Stardata XML file.
         # TODO remove 'stardev is True' statement once function is written.
         if i.endswith('.xml') and stardev is True:
+            print('INFO : Processing file : %s' % i)
             # Call stardata function with filename and debug level
             status, data = stardata(i, debug)
 
