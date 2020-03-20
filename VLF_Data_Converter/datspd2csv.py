@@ -24,13 +24,17 @@ from math import *
 import argparse
 from pathlib import Path
 from shutil import copyfile
+import xml.etree.ElementTree as eTree
+import sys
 
-version = '2.4'
+stardev = True  # Just a param to allow processing of stardata, will remove once code is working.
+
+version = '2.6'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
 output_path = '/Users/mark/Data_Converter'
-transverse = None  # transverse
+transverse = None  # Set transverse to None if providing args from command line.
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser()
@@ -111,16 +115,21 @@ def doubledt_2_stddt(dd_date):
     # So here we set our double_date_base date to this date and time.
     double_date_base = datetime.datetime(1899, 12, 30, 0, 0, 0)  # The base date double uses to find the current date.
 
-    # Check the parameter that is passed to this function is a float.
-    if type(dd_date) != 'float':
-        dd_date = float(dd_date)
+    try:
+        # Check the parameter that is passed to this function is a float.
+        if type(dd_date) != 'float':
+            dd_date = float(dd_date)
 
-    # Set the date to be the double_date_base plus the amount of time that has passed as denoted by the double we have
-    # been passed.
-    dt = double_date_base + datetime.timedelta(days=float(dd_date))
+        # Set the date to be the double_date_base plus the amount of time that has passed as denoted by the double we have
+        # been passed.
+        dt = double_date_base + datetime.timedelta(days=float(dd_date))
 
-    # Return the resulting date but round to the nearest second.
-    return dt - datetime.timedelta(microseconds=dt.microsecond)  # This timedelta rounds to the nearest second.
+        # Round the date to the nearest second.
+        stddt = (dt - datetime.timedelta(microseconds=dt.microsecond))  # This timedelta rounds to the nearest second.
+    except OverflowError as error_msg:
+        return False, error_msg
+    else:
+        return True, stddt
 
 
 def stardata(filename, debug):
@@ -133,7 +142,35 @@ def stardata(filename, debug):
     :param debug: integer 0 - 2 with 0 being no debugs, 1 debugging on and 2 verbose debugs.
     :return: tuple <boolean, list>
     '''
-    pass
+
+    # set up debugging ...
+    if debug == 1:
+        star_debug = True
+        star_chunk_debug = False
+    elif debug == 2:
+        star_debug = True
+        star_chunk_debug = True
+    else:
+        star_debug = False
+        star_chunk_debug = False
+
+    # CSV Data list
+    csv_data = []
+
+    if star_debug: print('DEBUG : Starbase Stardata Converter')
+
+    print('INFO : Processing file %s' % filename)
+
+    # The tree root is the top level tag.
+    xmldom = eTree.parse(filename)  # Open and parse xml document.
+
+    # See if we can find the stardata tag otherwise we bail
+
+    is_FormattedStardata = xmldom.findall('FormattedStardata')
+
+    print(is_FormattedStardata)
+
+    return False, None
 
 
 def john_cook_data(filename, debug):
@@ -1116,7 +1153,9 @@ def main():
                 # As the file already exists in this file path we do nothing.
                 pass
 
+        # Process John Cook data file.
         if i.endswith('.dat'):
+            # Call john_cook_data function with filename and debug level
             status, data = john_cook_data(i, debug)
             if not status:
                 print('WARNING : Unable to process %s' % i)
@@ -1135,7 +1174,9 @@ def main():
                     # prefix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
 
+        # Process Radio SkyPipe file.
         if i.endswith('.spd'):
+            # Call radio_sky_pipe function with filename and debug level
             status, data = radio_sky_pipe(i, debug)
             if not status:
                 print('WARNING : Unable to process %s' % i)
@@ -1153,6 +1194,12 @@ def main():
                 else:
                     # prefix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
+
+        # Process Starbase Stardata XML file.
+        # TODO remove 'stardev is True' statement once function is written.
+        if i.endswith('.xml') and stardev is True:
+            # Call stardata function with filename and debug level
+            status, data = stardata(i, debug)
 
         # If process_data is true we can give it ago at creating the metadata and then creating the csv file.
         if process_data:
