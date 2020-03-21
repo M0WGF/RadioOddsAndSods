@@ -16,6 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with VLF Data Converter Tool.  If not, see <http://www.gnu.org/licenses/>.
 
+# Set your default paths and parameters here, note if the paths are specified at the cmdline these will be ignored.
+
+# The base folder of where your data files to be processed reside.
+input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
+
+# The base folder of where your processed files will be saved this is overridden when preserve is set.
+output_path = '/Users/mark/Data_Converter'
+
+# Set transverse file system. e.g Process files in sub folders
+transverse = False  # True or False
+
+# Set preserve file structure. e.g The output file will be saved in the folder as where the input file resides.
+preserve = False  # True or False
+
+# ============================================================================= #
+# ================== DO NOT CHANGE ANYTHING BELOW THIS POINT ================== #
+# ============================================================================= #
+
 import struct
 import os
 import datetime
@@ -30,12 +48,6 @@ import sys
 stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
 version = '2.9'
-
-# Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
-input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
-output_path = '/Users/mark/Data_Converter'
-transverse = False  # Set transverse file system to True or False.
-preserve = False  # Set to True or False so that output_path will be the same as the input path
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser()
@@ -1158,7 +1170,7 @@ def main():
 
         if i.endswith('.csv') or i.endswith('.txt'):
             print('INFO : Processing file : %s' % i)
-            print('WARNING : File is already in CSV format %s\n' % i)
+            print('WARNING : File is already in CSV format %s' % i)
             # Get original filename
             original_filename = os.path.basename(os.path.normpath(i))
 
