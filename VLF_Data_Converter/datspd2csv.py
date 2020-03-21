@@ -1,4 +1,4 @@
-# VLF Data Converter Tool - Version 2.4
+# VLF Data Converter Tool - Version 2.9
 # Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
 #
 # This file is part of VLF Data Converter Tool.
