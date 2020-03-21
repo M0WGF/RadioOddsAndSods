@@ -12,6 +12,7 @@ The following four parameters can be set in the top of the python file under the
 
 input_path : The folder or base folder where the files to be processed reside.
 output_path : The output folder where processed files will be saved unless preserve is set.
+
 preserve : Save the processed files to the location of the original file.
 transverse : Follow directory structure beneath the base folder.
 
