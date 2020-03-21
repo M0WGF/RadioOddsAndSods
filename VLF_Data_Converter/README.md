@@ -11,8 +11,11 @@ The processed files can either be saved to a defined folder or in the original l
 The following four parameters can be set in the top of the python file under the copyright notice.
 
 input_path : The folder or base folder where the files to be processed reside.
+
 output_path : The output folder where processed files will be saved unless preserve is set.
+
 preserve : Save the processed files to the location of the original file.
+
 transverse : Follow directory structure beneath the base folder.
 
 The above parameter can also be set from the command line. 
