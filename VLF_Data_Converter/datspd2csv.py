@@ -29,29 +29,34 @@ import sys
 
 stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
-version = '2.8'
+version = '2.9'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
-# input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
-input_path = '/Applications/Starbase.app/Contents/Resources/Java/workspace/samples'
+input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
 output_path = '/Users/mark/Data_Converter'
 transverse = False  # Set transverse file system to True or False.
+preserve = False  # Set output_path to be the same as the input path
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser()
 
 # command line argument to take the input path where the .dat files are
-parser.add_argument('-i', '--i', dest='indir', help='Input files directory. This will override the hardcoded path.')
+parser.add_argument('-i', '--i', dest='indir', help='Input files directory. Can be made persistent by editing the'
+                                                    'parameter input_path in the code. ')
 
 # command line argument that takes the path where the output files go
-parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. This will override the hardcoded path.')
+parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. Can be made persistent by editing the'
+                                                     'parameter output_path in the code')
 
 # command line argument that takes the path where the output files go
-parser.add_argument('-p', '--p', action='store_true', help='Save output files to original input directory.')
+parser.add_argument('-p', '--p', action='store_true', help='Set the output path to the same as input path. Can be set'
+                                                           'persistent by setting the parameter preserve to True'
+                                                           'in the code.')
 
 # command line argument to transverse the input path.
-parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories. You can set this to be'
-                                                           'always on by setting transverse = True in the code.')
+parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories. Can be set to be'
+                                                           'persistent by setting parameter transverse to True'
+                                                           'in the code.')
 
 # command line argument to enable debugging
 parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -vv for really verbose debugs.'
@@ -1152,7 +1157,8 @@ def main():
         process_data = False
 
         if i.endswith('.csv') or i.endswith('.txt'):
-            print('WARNING : File is already in CSV format %s' % i)
+            print('INFO : Processing file : %s' % i)
+            print('WARNING : File is already in CSV format %s\n' % i)
             # Get original filename
             original_filename = os.path.basename(os.path.normpath(i))
 
@@ -1164,10 +1170,10 @@ def main():
                 try:
                     copyfile(i, out_file)
                 except OSError as err:
-                    print('ERROR : Unable to move %s %s' % (original_filename, err))
+                    print('ERROR : Unable to move %s %s\n' % (original_filename, err))
                     print()
                 else:
-                    print('INFO : Moved file %s to %s' % (original_filename, out_file))
+                    print('INFO : Moved file %s to %s\n' % (original_filename, out_file))
 
             else:
                 # As the file already exists in this file path we do nothing.
@@ -1179,7 +1185,7 @@ def main():
             # Call john_cook_data function with filename and debug level
             status, data = john_cook_data(i, debug)
             if not status:
-                print('WARNING : Unable to process %s' % data)
+                print('WARNING : Unable to process %s\n' % data)
             else:
                 process_data = True
                 # Get original filename
@@ -1188,12 +1194,13 @@ def main():
                 new_filename = Path(original_filename).stem + ".csv"
 
                 # Either output new file to new path or preserve file path.
-                if not args.p:
-                    # suffix output path with new_filename
-                    out_file = os.path.join(output, new_filename)
-                else:
+                # We run preserve based on either the preserve parameter being set or set from cmdline.
+                if preserve or args.p:
                     # suffix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
+                else:
+                    # suffix output path with new_filename
+                    out_file = os.path.join(output, new_filename)
 
         # Process Radio SkyPipe file.
         if i.endswith('.spd'):
@@ -1201,7 +1208,7 @@ def main():
             # Call radio_sky_pipe function with filename and debug level
             status, data = radio_sky_pipe(i, debug)
             if not status:
-                print('WARNING : Unable to process %s' % data)
+                print('WARNING : Unable to process %s\n' % data)
             else:
                 process_data = True
                 # Get original filename
@@ -1210,12 +1217,13 @@ def main():
                 new_filename = Path(original_filename).stem + ".csv"
 
                 # Either output new file to new path or preserve file path.
-                if not args.p:
-                    # suffix output path with new_filename
-                    out_file = os.path.join(output, new_filename)
-                else:
+                # We run preserve based on either the preserve parameter being set or set from cmdline.
+                if preserve or args.p:
                     # suffix original path with new_filename
                     out_file = os.path.join(os.path.dirname(os.path.abspath(i)), new_filename)
+                else:
+                    # suffix output path with new_filename
+                    out_file = os.path.join(output, new_filename)
 
         # Process Starbase Stardata XML file.
         # TODO remove 'stardev is True' statement once function is written.
@@ -1237,9 +1245,9 @@ def main():
                 # Close the file.
                 f.close()
 
-                print('INFO : New file created - %s' % out_file)
+                print('INFO : New file created - %s\n' % out_file)
             else:
-                print('ERROR : File exists unable to create - %s ' % out_file)
+                print('ERROR : File exists unable to create - %s\n' % out_file)
 
 
 main()
