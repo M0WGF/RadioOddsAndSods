@@ -35,7 +35,7 @@ version = '2.9'
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
 output_path = '/Users/mark/Data_Converter'
 transverse = False  # Set transverse file system to True or False.
-preserve = False  # Set output_path to be the same as the input path
+preserve = False  # Set to True or False so that output_path will be the same as the input path
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser()
