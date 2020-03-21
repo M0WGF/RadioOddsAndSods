@@ -29,7 +29,7 @@ import sys
 
 stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
-version = '2.7'
+version = '2.8'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
 input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
@@ -1241,7 +1241,7 @@ def main():
                     f.write(i + '\n')
 
                 # Close the file.
-                f. close()
+                f.close()
 
                 print('INFO : New file created - %s' % out_file)
             else:
