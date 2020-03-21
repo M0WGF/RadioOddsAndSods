@@ -32,9 +32,10 @@ stardev = False  # Just a param to allow processing of stardata, will remove onc
 version = '2.8'
 
 # Set your default paths here, note if the paths are specified at the cmdline these will be ignored.
-input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
+# input_path = '/Users/mark/PyCharmProjects/RadioOddsAndSods/VLF_Data_Converter'  # e.g '/Home/mark'
+input_path = '/Applications/Starbase.app/Contents/Resources/Java/workspace/samples'
 output_path = '/Users/mark/Data_Converter'
-transverse = None  # Set transverse to None if providing args from command line.
+transverse = False  # Set transverse file system to True or False.
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser()
@@ -49,14 +50,15 @@ parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. Th
 parser.add_argument('-p', '--p', action='store_true', help='Save output files to original input directory.')
 
 # command line argument to transverse the input path.
-parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories.')
+parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories. You can set this to be'
+                                                           'always on by setting transverse = True in the code.')
 
 # command line argument to enable debugging
 parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -vv for really verbose debugs.'
                                                       'You may want to redirect stdout to a file as -vv is '
                                                       'very verbose.')
 
-# command line argument to transverse the input path.
+# command line argument to print the version number
 parser.add_argument('-V', '--V', action='store_true', help='Print version number.')
 
 # create the argument handler object
@@ -1079,8 +1081,6 @@ def radio_sky_pipe(filename, debug):
 
 
 def main():
-    # Set tverse false so we can set true if transverse file system is set.
-    tverse = False
 
     # Set the home where the files we wish to process reside either by the input_path variable or -i arg.
 
@@ -1118,25 +1118,11 @@ def main():
         print('\r\nERROR : Unable to create output folder %s ' % error)
         exit(1)
 
-    # Set transverse either or true or false based on -t arg
-    if transverse is not None:
-        tverse = True
-    else:
-        if args.t:
-            tverse = True
-
     # a simple list to hold the files we want to process.
     files_2b_processed = []
 
-    if not tverse:
-
-        for file in os.listdir(input_path):
-            # Check file is actually a file.  ;-)
-            if os.path.isfile(os.path.join(input_path, file)):
-                # Append filename and path to list.
-                files_2b_processed.append(os.path.join(input_path, file))
-
-    else:
+    # If transverse is set True or -t arg has been provided we transverse the input_path directory structure.
+    if transverse or args.t:
 
         for dirName, subDir, fileList in os.walk(input_path, topdown=False, onerror=None, followlinks=False):
             for file in fileList:
@@ -1144,6 +1130,14 @@ def main():
                 if os.path.isfile(os.path.join(dirName, file)):
                     # Append filename and path to list.
                     files_2b_processed.append(os.path.join(dirName, file))
+
+    else:
+
+        for file in os.listdir(input_path):
+            # Check file is actually a file.  ;-)
+            if os.path.isfile(os.path.join(input_path, file)):
+                # Append filename and path to list.
+                files_2b_processed.append(os.path.join(input_path, file))
 
     # Check files_2b_processed isn't empty.
     if len(files_2b_processed) == 0:
