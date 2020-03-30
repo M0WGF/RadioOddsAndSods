@@ -63,7 +63,7 @@ class getK3sVFO(QThread):
                     result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
 
                     # Emit the vfo reading.
-                    self.hertz.emit(result)
+                    self.hertz.emit(int(result))
 
                     # Sleep for time stated by poll.
                     time.sleep(self.poll)
