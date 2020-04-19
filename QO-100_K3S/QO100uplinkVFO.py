@@ -71,10 +71,6 @@ class getK3sVFO(QThread):
         # Initiate the serial port.
         self.k3s_port = serial.Serial()
 
-        # Not sure I need this so will put here for a moment.
-        if self.VFO == 0:
-            self.k3s_port.stopbits = serial.STOPBITS_TWO
-
         # Set the baud rate.
         self.k3s_port.baudrate = baud
 
@@ -96,7 +92,7 @@ class getK3sVFO(QThread):
 
                     self.k3s_port.write(self.VFO_CMD)  # Get VFO frequency from radio
 
-                    data = self.k3s_port.read(self.VFO_CMD_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
+                    data = self.k3s_port.read(self.VFO_DATA_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
 
                     print(data)
 
