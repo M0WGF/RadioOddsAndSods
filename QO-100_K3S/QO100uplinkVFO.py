@@ -47,24 +47,41 @@ class getK3sVFO(QThread):
             port = config.get('CONFIG', 'PORT')
             baud = int(config.get('CONFIG', 'BAUD'))
             self.poll = float(config.get('CONFIG', 'POLL'))
+            rig = config.get('CONFIG', 'RIG')
         except configparser.NoSectionError:  # If the file or configuration is missing set some defaults.
             print('Error Config Missing - See http://m0wgf.blogspot.com')
             self.lo = 432000000
             port = 'COM1'
             baud = 38400
             self.poll = 0.01
+            rig = 'K3S'
 
-        # TODO remove pause it's just for testing.
-        self.pause = False
+        rig = rig.lower()
+
+        if rig == 'k3s':
+            self.VFO = 1  # Simple switch to tell later on if rig is Elecraft.
+            self.VFO_CMD = b'FA;'  # VFO Command that is sent to the radio.
+            self.VFO_DATA_LENGTH = 14  # The expected length of the response.
+        else:
+            self.VFO = 0  # Simple switch to tell later on if rig is Yaesu.
+            self.VFO_CMD = b'\x00\x00\x00\x00\x03'
+            self.VFO_DATA_LENGTH = 5  # The expected length of the response.
+
 
         # Initiate the serial port.
         self.k3s_port = serial.Serial()
+
+        # Not sure I need this so will put here for a moment.
+        if self.VFO == 0:
+            self.k3s_port.stopbits = serial.STOPBITS_TWO
 
         # Set the baud rate.
         self.k3s_port.baudrate = baud
 
         # Set the serial port.
         self.k3s_port.port = port
+
+
 
     def run(self):
 
@@ -74,11 +91,23 @@ class getK3sVFO(QThread):
 
             try:
                 if self.k3s_port.is_open:
-                    self.k3s_port.write(b'FA;')  # Get VFO frequency from radio
 
-                    data = self.k3s_port.read(14)  # Reads 14 Bytes which is the max number of bytes the radio should respond with.
-                    data = data.decode('ascii')  # Decode bytes to ascii
-                    result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
+                    print('Port is open')
+
+                    self.k3s_port.write(self.VFO_CMD)  # Get VFO frequency from radio
+
+                    data = self.k3s_port.read(self.VFO_CMD_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
+
+                    print(data)
+
+                    if self.VFO == 1:
+                        data = data.decode('ascii')  # Decode bytes to ascii
+                        result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
+                    elif self.VFO == 0:
+                        print('FT817')
+                        data = data[0], data[1], data[2], data[3]
+                        result = "%02x%02x%02x%02x0" % data
+                        print(result)
 
                     # Emit the vfo reading.
                     self.hertz.emit(int(result))
@@ -104,11 +133,15 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         # Setup the Ui_Form display.
         self.setupUi(self)
 
-        # Set the window title.
-        self.setWindowTitle('K3s, QO100 (Uplink, Downlink) VFO Display')
-
         # Initiate the k3s_vfo class
         self.k3s_vfo = getK3sVFO()
+
+        if self.k3s_vfo.VFO == 1:
+            # Set the window title.
+            self.setWindowTitle('K3s, QO100 (Uplink, Downlink) VFO Display')
+        else:
+            # Set the window title.
+            self.setWindowTitle('FT817, QO100 (Uplink, Downlink) VFO Display')
 
         # Connect the connect button to the k3s_vfo class serial port connect function.
         self.connectButton.clicked.connect(self.k3s_vfo.connect)
