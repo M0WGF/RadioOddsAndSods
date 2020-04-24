@@ -43,7 +43,6 @@ import argparse
 from pathlib import Path
 from shutil import copyfile
 import xml.etree.ElementTree as eTree
-import sys
 
 stardev = False  # Just a param to allow processing of stardata, will remove once code is working.
 
@@ -57,17 +56,17 @@ parser.add_argument('-i', '--i', dest='indir', help='Input files directory. Can 
                                                     'parameter input_path in the code. ')
 
 # command line argument that takes the path where the output files go
-parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. Can be made persistent by editing the'
+parser.add_argument('-o', '--o', dest='outdir', help='Output files directory. Can be made persistent by editing the '
                                                      'parameter output_path in the code')
 
 # command line argument that takes the path where the output files go
-parser.add_argument('-p', '--p', action='store_true', help='Set the output path to the same as input path. Can be set'
-                                                           'persistent by setting the parameter preserve to True'
+parser.add_argument('-p', '--p', action='store_true', help='Set the output path to the same as input path. Can be set '
+                                                           'persistent by setting the parameter preserve to True '
                                                            'in the code.')
 
 # command line argument to transverse the input path.
-parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories. Can be set to be'
-                                                           'persistent by setting parameter transverse to True'
+parser.add_argument('-t', '--t', action='store_true', help='Transverse input path subdirectories. Can be set to be '
+                                                           'persistent by setting parameter transverse to True '
                                                            'in the code.')
 
 # command line argument to enable debugging
@@ -78,12 +77,14 @@ parser.add_argument('-v', '--v', action='count', help='Enable debugging -v or -v
 # command line argument to print the version number
 parser.add_argument('-V', '--V', action='store_true', help='Print version number.')
 
+# command line argument to print the version number
+# parser.add_argument('-g', '--g', action='store_true', help='Enable GUI.')
+
 # create the argument handler object
 args = parser.parse_args()
 
 if args.V:
     print('VLF data converter, version %s' % version)
-    exit(0)
 
 # Set debugging from command line.
 if args.v is not None and args.v == 1:
