@@ -22,6 +22,7 @@ import serial
 import datetime
 import csv
 import os
+import matplotlib
 
 version = '1.0'
 
@@ -29,20 +30,28 @@ version = '1.0'
 parser = argparse.ArgumentParser(
     description='''This software will collect data from the BG7TGL FA-2 Frequency counter over a set period of time. 
     The data will be displayed using a line chart or can be saved to CSV with time stamp.  To have a chart displayed
-    you'll need to have matplotlib installed.''',
+    you'll need to have matplotlib installed. ''',
     epilog='''If you have modifications to this program please email me thanks Mark M0WGF mhorn71 (at) gmail (dot) com ''')
 
 # command line argument to take the input path where the .dat files are
 parser.add_argument('-s', dest='port', help='Serial Port')
 parser.add_argument('-b', dest='baudrate', help='Baudrate. Default : 9600')
-parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : 60')
+parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : If no time period '
+                                              'is set the script will run until the user calls ctrl-c '
+                                              'at which point the script will create a csv file, graph or both.')
 parser.add_argument('-c', dest='csv', action='store_true', help='Save collected data to CSV file.')
 parser.add_argument('-d', dest='dest',
                     help='Full path where the CSV data is to be saved. Default : Where this script resides.')
 parser.add_argument('-g', dest='graph', action='store_true', help='Show chart of collected data.')
+parser.add_argument('-v', dest='version', action='store_true', help='Show version number.')
 
 # create the argument handler object
 args = parser.parse_args()
+
+if args.version:
+    print('BG7TGL Frequency Counter Data Collection Tool - Version %s' % version)
+    print('By Mark Horn M0WGF - mhorn (at) gmail (dot) com')
+    exit(0)
 
 
 def spinning_cursor():
@@ -91,28 +100,35 @@ def data_collector():
     if args.period:
         end_time = datetime.datetime.now() + datetime.timedelta(seconds=int(args.period))
     else:
-        end_time = datetime.datetime.now() + datetime.timedelta(seconds=60)
+        end_time = datetime.datetime.now() + datetime.timedelta(days=2)
 
     print("Reading serial port .... ")
 
     while True:
-        if datetime.datetime.now() <= end_time:
-            # Show cursor indicator
-            sys.stdout.write(next(spinner))
-            sys.stdout.flush()
-            sys.stdout.write('\b')
+        try:
+            if datetime.datetime.now() <= end_time:
+                # Show cursor indicator
+                sys.stdout.write(next(spinner))
+                sys.stdout.flush()
+                sys.stdout.write('\b')
 
-            # Read 22 bytes from serial port.
-            data_from_bg7tgl = BG7TGL.read(27)
-            # Format data we first remove the 3 spaces and F: from start of string and strip the \r\n
-            bg7tgl_formatted_data = data_from_bg7tgl.decode()[5:].strip('\r\n')
+                # Read 22 bytes from serial port.
+                try:
+                    data_from_bg7tgl = BG7TGL.read(27)
+                except Exception:
+                    pass
 
-            # If data is long enough then append it to the data list along with a time stamp.
-            if len(bg7tgl_formatted_data) == 20:
-                # Append date and formatted data to data list as tuple.
-                data.append((datetime.datetime.now(), bg7tgl_formatted_data))
+                # Format data we first remove the 3 spaces and F: from start of string and strip the \r\n
+                bg7tgl_formatted_data = data_from_bg7tgl.decode()[5:].strip('\r\n')
 
-        else:
+                # If data is long enough then append it to the data list along with a time stamp.
+                if len(bg7tgl_formatted_data) == 20:
+                    # Append date and formatted data to data list as tuple.
+                    data.append((datetime.datetime.now(), bg7tgl_formatted_data))
+
+            else:
+                break
+        except KeyboardInterrupt:
             break
 
     # Close serial port
@@ -135,6 +151,10 @@ def data_collector():
         with open(filename, 'w', newline='\n', encoding='utf-8') as csv_outfile:
             csv_out = csv.writer(csv_outfile, dialect='excel')
             csv_out.writerows(data)
+
+    # Create plot of data.
+    if args.graph:
+        pass
 
 
 data_collector()
