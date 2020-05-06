@@ -18,9 +18,10 @@
 
 import argparse
 import sys
-import time
 import serial
 import datetime
+import csv
+import os
 
 version = '1.0'
 
@@ -36,7 +37,8 @@ parser.add_argument('-s', dest='port', help='Serial Port')
 parser.add_argument('-b', dest='baudrate', help='Baudrate. Default : 9600')
 parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : 60')
 parser.add_argument('-c', dest='csv', action='store_true', help='Save collected data to CSV file.')
-parser.add_argument('-d', dest='dest', help='Full path where the CSV data is to be saved.')
+parser.add_argument('-d', dest='dest',
+                    help='Full path where the CSV data is to be saved. Default : Where this script resides.')
 parser.add_argument('-g', dest='graph', action='store_true', help='Show chart of collected data.')
 
 # create the argument handler object
@@ -53,7 +55,6 @@ def spinning_cursor():
 
 
 def data_collector():
-
     # A quick check we have one of the default output options selected.
     if args.csv != True and args.graph != True:
         print('ERROR :- You must supply specify CSV or Graph output or both not NONE!')
@@ -92,31 +93,48 @@ def data_collector():
     else:
         end_time = datetime.datetime.now() + datetime.timedelta(seconds=60)
 
-    print("Processing .... ")
+    print("Reading serial port .... ")
 
     while True:
         if datetime.datetime.now() <= end_time:
             # Show cursor indicator
             sys.stdout.write(next(spinner))
             sys.stdout.flush()
-            time.sleep(0.1)
             sys.stdout.write('\b')
 
             # Read 22 bytes from serial port.
-            data_from_bg7tgl = BG7TGL.read(22)
-            # Get item 0 from above read and remove the first two chars which are F:
-            bg7tgl_formatted_data = data_from_bg7tgl[0][2:]
+            data_from_bg7tgl = BG7TGL.read(27)
+            # Format data we first remove the 3 spaces and F: from start of string and strip the \r\n
+            bg7tgl_formatted_data = data_from_bg7tgl.decode()[5:].strip('\r\n')
 
             # If data is long enough then append it to the data list along with a time stamp.
-            if len(bg7tgl_formatted_data) > 19:
-                data.append(datetime.datetime.now(), bg7tgl_formatted_data)
+            if len(bg7tgl_formatted_data) == 20:
+                # Append date and formatted data to data list as tuple.
+                data.append((datetime.datetime.now(), bg7tgl_formatted_data))
 
         else:
             break
 
-    print('Processing finished ...')
+    # Close serial port
+    try:
+        BG7TGL.close()
+        print('Serial port closed ....')
+    except Exception:
+        pass
 
-    for i in data:
-        print(i)
+    # If save to csv is true then lets do it.
+    if args.dest:
+        filename = os.path.join(args.dest, 'bg7tgl.csv')
+        print('Saving CSV to : %s' % filename)
+    else:
+        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg7tgl.csv')
+        print('Saving CSV to : %s' % filename)
+
+    # Save csv data.
+    if args.csv:
+        with open(filename, 'w', newline='\n', encoding='utf-8') as csv_outfile:
+            csv_out = csv.writer(csv_outfile, dialect='excel')
+            csv_out.writerows(data)
+
 
 data_collector()
