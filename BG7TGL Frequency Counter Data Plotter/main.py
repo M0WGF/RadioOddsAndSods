@@ -31,18 +31,21 @@ parser = argparse.ArgumentParser(
     description='''This software will collect data from the BG7TGL FA-2 Frequency counter over a set period of time. 
     The data will be displayed using a line chart or can be saved to CSV with time stamp.  To have a chart displayed
     you'll need to have matplotlib installed. ''',
-    epilog='''If you have modifications to this program please email me thanks Mark M0WGF mhorn71 (at) gmail (dot) com ''')
+    epilog='''If you have modifications to this program please email me, thanks. Mark M0WGF (mhorn71 (at) gmail (dot) com) ''')
 
 # command line argument to take the input path where the .dat files are
 parser.add_argument('-s', dest='port', help='Serial Port')
 parser.add_argument('-b', dest='baudrate', help='Baudrate. Default : 9600')
 parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : If no time period '
-                                              'is set the script will run until the user calls ctrl-c '
-                                              'at which point the script will create a csv file, graph or both.')
+                                              'is set the script will run until the user calls Ctrl-C '
+                                              'and interrupts. The script will still create a csv file, graph or both.')
 parser.add_argument('-c', dest='csv', action='store_true', help='Save collected data to CSV file.')
-parser.add_argument('-d', dest='dest',
-                    help='Full path where the CSV data is to be saved. Default : Where this script resides.')
 parser.add_argument('-g', dest='graph', action='store_true', help='Show chart of collected data.')
+parser.add_argument('-l', dest='stdout', action='store_true', help='Print data to stdout.')
+parser.add_argument('-d', dest='destination',
+                    help='Full path where the CSV data is to be saved. Default : Where this script resides.')
+parser.add_argument('-f', dest='file_name', help='Filename of saved CSV and Graph. ')
+parser.add_argument('-a', dest='append_file', action='store_true', help='Append data to already created csv file.')
 parser.add_argument('-v', dest='version', action='store_true', help='Show version number.')
 
 # create the argument handler object
@@ -69,6 +72,33 @@ def data_collector():
         print('ERROR :- You must supply specify CSV or Graph output or both not NONE!')
         print('main.py -h for help.')
         exit(1)
+
+    # User supplied filename
+    if args.file_name:
+        file = args.file_name
+    else:
+        file = 'bg7tgl.csv'
+
+    # If save to csv is true then lets do it.
+    if args.destination:
+        filename = os.path.join(args.destination, file)
+    else:
+        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
+
+    # Are we appending csv data to an already existing file?
+    if args.append_file:
+        format = 'a+'
+    else:
+        format = 'x'
+
+    # check we can open the file and write to it.
+    try:
+        test = open(filename, format)
+    except Exception as msg:
+        print('ERROR :- %s' % msg)
+        exit(1)
+    else:
+        test.close()
 
     # Simple list to hold out collected data
     data = []
@@ -107,10 +137,6 @@ def data_collector():
     while True:
         try:
             if datetime.datetime.now() <= end_time:
-                # Show cursor indicator
-                sys.stdout.write(next(spinner))
-                sys.stdout.flush()
-                sys.stdout.write('\b')
 
                 # Read 22 bytes from serial port.
                 try:
@@ -126,9 +152,20 @@ def data_collector():
                     # Append date and formatted data to data list as tuple.
                     data.append((datetime.datetime.now(), bg7tgl_formatted_data))
 
+                    # If we're printing to stdout then we don't show the cursor spinner.
+                    if args.stdout:
+                        print(datetime.datetime.now(), bg7tgl_formatted_data)
+                    else:
+                        # Show cursor indicator
+                        sys.stdout.write(next(spinner))
+                        sys.stdout.flush()
+                        sys.stdout.write('\b')
+
             else:
+                # If the current time exceeds the start time plus the period then break the while loop.
                 break
         except KeyboardInterrupt:
+            # If user hit's ctrl-c then break while loop and continue.
             break
 
     # Close serial port
@@ -138,17 +175,10 @@ def data_collector():
     except Exception:
         pass
 
-    # If save to csv is true then lets do it.
-    if args.dest:
-        filename = os.path.join(args.dest, 'bg7tgl.csv')
-        print('Saving CSV to : %s' % filename)
-    else:
-        filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'bg7tgl.csv')
-        print('Saving CSV to : %s' % filename)
 
     # Save csv data.
     if args.csv:
-        with open(filename, 'w', newline='\n', encoding='utf-8') as csv_outfile:
+        with open(filename, 'a+', newline='\n', encoding='utf-8') as csv_outfile:
             csv_out = csv.writer(csv_outfile, dialect='excel')
             csv_out.writerows(data)
 
