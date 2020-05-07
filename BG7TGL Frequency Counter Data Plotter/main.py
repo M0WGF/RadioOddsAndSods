@@ -22,7 +22,7 @@ import serial
 import datetime
 import csv
 import os
-import matplotlib
+import matplotlib.pyplot as plt
 
 version = '1.0'
 
@@ -41,6 +41,7 @@ parser.add_argument('-p', dest='period', help='Period over which to sample data 
                                               'and interrupts. The script will still create a csv file, graph or both.')
 parser.add_argument('-c', dest='csv', action='store_true', help='Save collected data to CSV file.')
 parser.add_argument('-g', dest='graph', action='store_true', help='Show chart of collected data.')
+parser.add_argument('-G', dest='graph_save', action='store_true', help='Saves created chart to file without showing the chart.')
 parser.add_argument('-l', dest='stdout', action='store_true', help='Print data to stdout.')
 parser.add_argument('-d', dest='destination',
                     help='Full path where the CSV data is to be saved. Default : Where this script resides.')
@@ -75,30 +76,42 @@ def data_collector():
 
     # User supplied filename
     if args.file_name:
-        file = args.file_name
+        file = str(args.file_name) + '.csv'
+        chart_file = str(args.file_name) + '.png'
     else:
         file = 'bg7tgl.csv'
+        chart_file = 'bg7tgl.png'
 
-    # If save to csv is true then lets do it.
+    # Create the file and path variable so we can use them later.
     if args.destination:
         filename = os.path.join(args.destination, file)
+        chartname = os.path.join(args.destination, chart_file)
     else:
         filename = os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
+        chartname = os.path.join(os.path.dirname(os.path.abspath(__file__)), chart_file)
 
     # Are we appending csv data to an already existing file?
     if args.append_file:
+        # Append to file and if it doesn't exist create it.
         format = 'a+'
     else:
+        # Create file.
         format = 'x'
 
     # check we can open the file and write to it.
-    try:
-        test = open(filename, format)
-    except Exception as msg:
-        print('ERROR :- %s' % msg)
-        exit(1)
-    else:
-        test.close()
+    if args.csv:
+        try:
+            test = open(filename, format)
+        except Exception as msg:
+            print('ERROR :- %s' % msg)
+            exit(1)
+        else:
+            test.close()
+
+    if args.graph_save:
+        if os.path.isfile(chartname):
+            print('ERROR :- Chart already exists you must use unique file names.')
+            exit(1)
 
     # Simple list to hold out collected data
     data = []
@@ -149,12 +162,16 @@ def data_collector():
 
                 # If data is long enough then append it to the data list along with a time stamp.
                 if len(bg7tgl_formatted_data) == 20:
+
+                    # Format data ready for printing and appending to data list and remove leading zeros.
+                    pre_data = datetime.datetime.now(), bg7tgl_formatted_data.lstrip('0')
+
                     # Append date and formatted data to data list as tuple.
-                    data.append((datetime.datetime.now(), bg7tgl_formatted_data))
+                    data.append(pre_data)
 
                     # If we're printing to stdout then we don't show the cursor spinner.
                     if args.stdout:
-                        print(datetime.datetime.now(), bg7tgl_formatted_data)
+                        print('%s %s' % (pre_data[0].strftime("%d/%m/%Y %H:%M:%S"), pre_data[1]))
                     else:
                         # Show cursor indicator
                         sys.stdout.write(next(spinner))
@@ -175,7 +192,6 @@ def data_collector():
     except Exception:
         pass
 
-
     # Save csv data.
     if args.csv:
         with open(filename, 'a+', newline='\n', encoding='utf-8') as csv_outfile:
@@ -184,7 +200,25 @@ def data_collector():
 
     # Create plot of data.
     if args.graph:
-        pass
+
+        formatted_data = [(elem1, elem2) for elem1, elem2 in data]
+
+        plt.plot(*zip(*formatted_data))
+        plt.title(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        plt.xlabel('time')
+        plt.ylabel('frequency')
+        plt.show()
+    elif args.graph_save:
+
+        formatted_data = [(elem1, elem2) for elem1, elem2 in data]
+
+        plt.plot(*zip(*formatted_data))
+        plt.title(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        plt.xlabel('time')
+        plt.ylabel('frequency')
+        plt.savefig(chartname)
+
+    print('Process finished ....')
 
 
 data_collector()
