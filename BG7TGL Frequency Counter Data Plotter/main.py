@@ -36,8 +36,8 @@ parser = argparse.ArgumentParser(
 # command line argument to take the input path where the .dat files are
 parser.add_argument('-s', dest='port', help='Serial Port')
 parser.add_argument('-b', dest='baudrate', help='Baudrate. Default : 9600')
-parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : If no time period '
-                                              'is set the script will run until the user calls Ctrl-C '
+parser.add_argument('-p', dest='period', help='Period over which to sample data in seconds. Default : If -p'
+                                              'isn\'t set the script will run until the user calls Ctrl-C '
                                               'and interrupts. The script will still create a csv file, graph or both.')
 parser.add_argument('-c', dest='csv', action='store_true', help='Save collected data to CSV file.')
 parser.add_argument('-g', dest='graph', action='store_true', help='Show chart of collected data, you can save the chart from the pop-up window.')

@@ -16,10 +16,9 @@ optional arguments:
   
   -b BAUDRATE     Baudrate. Default : 9600
   
-  -p PERIOD       Period over which to sample data in seconds. Default : If no
-                  time period is set the script will run until the user calls
-                  Ctrl-C and interrupts. The script will still create a csv
-                  file, graph or both.
+  -p PERIOD       Period over which to sample data in seconds. Default : If -p
+                  isn't set the script will run until the user calls Ctrl-C and 
+                  interrupts. The script will still create a csv file, graph or both.
                   
   -c              Save collected data to CSV file.
   
