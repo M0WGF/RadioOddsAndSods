@@ -204,7 +204,7 @@ def data_collector():
         formatted_data = [(elem1, elem2) for elem1, elem2 in data]
 
         plt.plot(*zip(*formatted_data))
-        plt.title(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        plt.title(datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S"))
         plt.xlabel('time')
         plt.ylabel('frequency')
         plt.show()
@@ -213,7 +213,7 @@ def data_collector():
         formatted_data = [(elem1, elem2) for elem1, elem2 in data]
 
         plt.plot(*zip(*formatted_data))
-        plt.title(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+        plt.title(datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S"))
         plt.xlabel('time')
         plt.ylabel('frequency')
         plt.savefig(chartname)
