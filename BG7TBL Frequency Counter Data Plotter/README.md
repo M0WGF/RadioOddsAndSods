@@ -1,9 +1,9 @@
-# BG7TGL Frequency Counter Data Plotter
+# BG7TBL Frequency Counter Data Plotter
 
 usage: main.py [-h] [-s PORT] [-b BAUDRATE] [-p PERIOD] [-c] [-g] [-G] [-l]
                [-d DESTINATION] [-f FILE_NAME] [-a] [-v]
 
-This software will collect data from the BG7TGL FA-2 Frequency counter over a
+This software will collect data from the BG7TBL FA-2 Frequency counter over a
 set period of time. The data will be displayed using a line chart or can be
 saved to CSV with time stamp. To have a chart displayed you'll need to have
 matplotlib installed.

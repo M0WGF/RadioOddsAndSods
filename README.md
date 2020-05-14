@@ -4,4 +4,4 @@
 
 **QO-100_K3S :** Display correct TX frequency when using K3S or Yaesu FT817 for QO-100, also show K3s VFO display and both Downlink and Uplink frequencies. 
 
-**BG7TGL Frequency Counter Data Plotter :** Create plot, csv file or both of data from the BG7TGL frequency counter.
+**BG7TBL Frequency Counter Data Plotter :** Create plot, csv file or both of data from the BG7TBL frequency counter.

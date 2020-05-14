@@ -1,20 +1,20 @@
-# BG7TGL Frequency Counter Data Collection Tool - Version 1.0
+# BG7TBL Frequency Counter Data Collection Tool - Version 1.0
 # Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
 #
-# This file is part of BG7TGL Frequency Counter Data Collection Tool.
+# This file is part of BG7TBL Frequency Counter Data Collection Tool.
 #
-# BG7TGL Frequency Counter Data Collection Tool is free software: you can redistribute it and/or modify
+# BG7TBL Frequency Counter Data Collection Tool is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 2 of the License, or
 # (at your option) any later version.
 #
-# BG7TGL Frequency Counter Data Collection Tool is distributed in the hope that it will be useful,
+# BG7TBL Frequency Counter Data Collection Tool is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with BG7TGL Frequency Counter Data Collection Tool.  If not, see <http://www.gnu.org/licenses/>.
+# along with BG7TBL Frequency Counter Data Collection Tool.  If not, see <http://www.gnu.org/licenses/>.
 
 import argparse
 import sys
@@ -28,7 +28,7 @@ version = '1.0'
 
 # setup the commandline argument handler
 parser = argparse.ArgumentParser(
-    description='''This software will collect data from the BG7TGL FA-2 Frequency counter over a set period of time. 
+    description='''This software will collect data from the BG7TBL FA-2 Frequency counter over a set period of time. 
     The data will be displayed using a line chart or can be saved to CSV with time stamp.  To have a chart displayed
     you'll need to have matplotlib installed. ''',
     epilog='''If you have modifications to this program please email me, thanks. Mark M0WGF (mhorn71 (at) gmail (dot) com) ''')
