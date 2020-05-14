@@ -164,14 +164,14 @@ def data_collector():
                 if len(bg7tgl_formatted_data) == 20:
 
                     # Format data ready for printing and appending to data list and remove leading zeros.
-                    pre_data = datetime.datetime.now(), bg7tgl_formatted_data.lstrip('0')
+                    pre_data = datetime.datetime.now().strftime("%Y/%m/%d %H:%M:%S"), bg7tgl_formatted_data.lstrip('0')
 
                     # Append date and formatted data to data list as tuple.
                     data.append(pre_data)
 
                     # If we're printing to stdout then we don't show the cursor spinner.
                     if args.stdout:
-                        print('%s %s' % (pre_data[0].strftime("%d/%m/%Y %H:%M:%S"), pre_data[1]))
+                        print('%s %s' % (pre_data[0].strftime("%Y/%m/%d %H:%M:%S"), pre_data[1]))
                     else:
                         # Show cursor indicator
                         sys.stdout.write(next(spinner))
