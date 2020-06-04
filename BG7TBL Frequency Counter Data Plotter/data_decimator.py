@@ -1,3 +1,21 @@
+# BG7TBL Frequency Counter Data Decimator Tool - Version 1.0
+# Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
+#
+# This file is part of BG7TBL Frequency Counter Data Decimator Tool.
+#
+# BG7TBL Frequency Counter Data Decimator Tool is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# BG7TBL Frequency Counter Data Decimator Tool is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with BG7TBL Frequency Counter Data Decimator Tool.  If not, see <http://www.gnu.org/licenses/>.
+
 import csv
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -48,7 +66,7 @@ if args.invert:
     invertYaxis = True
 else:
     invertYaxis = False # invert Y axis
-    
+
 if args.dec:
     decimals = int(args.dec)
 else:
