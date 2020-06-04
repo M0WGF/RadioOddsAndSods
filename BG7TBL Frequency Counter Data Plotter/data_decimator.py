@@ -21,10 +21,6 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import argparse
 
-'''
-Obviously set the below parameters and run the script.
-'''
-
 # setup the commandline argument handler
 parser = argparse.ArgumentParser(
     description='''This software will plot data collected from the BG7TBL FA-2 Frequency counter as created by the BG7TBL Frequency Counter Data Collection Tool.''',
@@ -33,7 +29,7 @@ parser = argparse.ArgumentParser(
 # command line argument to take the input path where the .dat files are
 parser.add_argument('-f', dest='filename', help='Filename.')
 parser.add_argument('-t', dest='title', help='Chart title.')
-parser.add_argument('-d', dest='decimate', help='Plot ever n number of samples.')
+parser.add_argument('-n', dest='decimate', help='Plot ever n number of samples.')
 parser.add_argument('-c', dest='cut', help='Ignore first n number of samples.')
 parser.add_argument('-i', dest='invert', help='Invert Y axis.')
 parser.add_argument('-d', dest='dec', help='Number of decimal places to plot between 1 to 9')
