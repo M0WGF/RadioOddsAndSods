@@ -1,4 +1,4 @@
-# QO100uplinkVFO - Version 1.0
+# QO100uplinkVFO - Version 2.0
 # Copyright (C) 2020  Mark Horn (M0WGF) mhorn71 (at) gmail (dot) com
 #
 # This file is part of QO100uplinkVFO.
@@ -23,15 +23,14 @@ from re import sub
 import configparser
 from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QWidget, QApplication
-from widget import Ui_Form
+from widget2 import Ui_Form
 
-
-class getK3sVFO(QThread):
+class RigVFO(QThread):
 
     # Emit current K3s VFO frequency.
     hertz = pyqtSignal(object)
     # Emit serial port disconnect.
-    k3sDisconnect = pyqtSignal()
+    RigDisconnect = pyqtSignal()
 
     def __init__(self):
         QThread.__init__(self)
@@ -58,6 +57,7 @@ class getK3sVFO(QThread):
 
         rig = rig.lower()
 
+        # Just a simple switch 0 or 1 switch for radio type along with command code and data length.
         if rig == 'k3s':
             self.VFO = 1  # Simple switch to tell later on if rig is Elecraft.
             self.VFO_CMD = b'FA;'  # VFO Command that is sent to the radio.
@@ -69,13 +69,13 @@ class getK3sVFO(QThread):
 
 
         # Initiate the serial port.
-        self.k3s_port = serial.Serial()
+        self.serial_port = serial.Serial()
 
         # Set the baud rate.
-        self.k3s_port.baudrate = baud
+        self.serial_port.baudrate = baud
 
         # Set the serial port.
-        self.k3s_port.port = port
+        self.serial_port.port = port
 
 
 
@@ -86,13 +86,13 @@ class getK3sVFO(QThread):
         while True:
 
             try:
-                if self.k3s_port.is_open:
+                if self.serial_port.is_open:
 
                     print('Port is open')
 
-                    self.k3s_port.write(self.VFO_CMD)  # Get VFO frequency from radio
+                    self.serial_port.write(self.VFO_CMD)  # Get VFO frequency from radio
 
-                    data = self.k3s_port.read(self.VFO_DATA_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
+                    data = self.serial_port.read(self.VFO_DATA_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
 
                     print(data)
 
@@ -111,15 +111,15 @@ class getK3sVFO(QThread):
                     # Sleep for time stated by poll.
                     time.sleep(self.poll)
                 else:
-                    self.k3sDisconnect.emit()
+                    self.RigDisconnect.emit()
             except Exception:
-                self.k3sDisconnect.emit()
+                self.RigDisconnect.emit()
 
     def connect(self):
         try:
-            self.k3s_port.open()
+            self.serial_port.open()
         except Exception:
-            self.k3sDisconnect.emit()
+            self.RigDisconnect.emit()
 
 
 class QO100uplinkVFO(QWidget, Ui_Form):
@@ -129,33 +129,63 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         # Setup the Ui_Form display.
         self.setupUi(self)
 
-        # Initiate the k3s_vfo class
-        self.k3s_vfo = getK3sVFO()
+        # Initiate the rig_vfo class
+        self.rig_vfo = RigVFO()
 
-        if self.k3s_vfo.VFO == 1:
+        if self.rig_vfo.VFO == 1:
             # Set the window title.
-            self.setWindowTitle('K3s, QO100 (Uplink, Downlink) VFO Display')
+            self.setWindowTitle('K3s VFO Display')
         else:
             # Set the window title.
-            self.setWindowTitle('FT817, QO100 (Uplink, Downlink) VFO Display')
+            self.setWindowTitle('FT817 VFO Display')
 
         # Connect the connect button to the k3s_vfo class serial port connect function.
-        self.connectButton.clicked.connect(self.k3s_vfo.connect)
+        self.connectButton.clicked.connect(self.rig_vfo.connect)
+
+        # Connect the XIT button to XIT function.
+        self.xit.clicked.connect(self.xit_clarifier)
+
+        # Connect the XIT QDial to XIT Offset function.
+        self.xit_offset.valueChanged.connect(self.xit_offset_dial)
+        # Set offset dial to zero.
+        self.xit_offset.setValue(0)
+        # Set offset lcd to zero.
+        self.xit_lcd.display(0)
+        # Disable offset dial as default state.
+        self.xit_offset.setDisabled(True)
+
+        # Connect Band1 and Band2 RadioButton to function.
+        self.bandButtonGroup.buttonClicked[int].connect(self.band)
+        # Set the ID of each button in the QRadioButton Group.
+        self.bandButtonGroup.setId(self.band1, 1)
+        self.bandButtonGroup.setId(self.band2, 2)
+
+        # Set Band1 RadioButton as checked.
+        self.band1.setChecked(True)
+
+        # Control states so we can switch between band and not lose XIT offset.
+        self.selected_band1 = True
+        self.selected_xit_band1 = False
+        self.selected_xit_offset_band1 = 0
+
+        self.selected_band2 = False
+        self.selected_xit_band2 = False
+        self.selected_xit_offset_band2 = 0
 
         # Define the uplink and downlink IF's using the LO parameter from the k3s_vfo class.
-        self.uplink_if = 2400000000 - self.k3s_vfo.lo
+        self.uplink_if = 2400000000 - self.rig_vfo.lo
 
-        self.downlink_if = 10489500000 - self.k3s_vfo.lo
+        self.downlink_if = 10489500000 - self.rig_vfo.lo
 
     def start(self):
 
         # This function starts the thread to run the serial port K3s poller.
 
         self.thread = []
-        self.k3s_vfo.hertz.connect(self.updater)
-        self.k3s_vfo.k3sDisconnect.connect(self.error)
-        self.thread.append(self.k3s_vfo)
-        self.k3s_vfo.start()
+        self.rig_vfo.hertz.connect(self.updater)
+        self.rig_vfo.RigDisconnect.connect(self.error)
+        self.thread.append(self.rig_vfo)
+        self.rig_vfo.start()
 
     def data_list(self, data):
 
@@ -210,8 +240,96 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         freq = '.'.join(freq_list)
         self.downlink.display(freq)
 
+    def xit_clarifier(self):
+
+        # If XIT butten is pressed set up XIT for the band selected.
+
+        if self.selected_band1:
+            # Check if xit button is checked.
+            if self.xit.isChecked():
+                # Enable the offset dial.
+                self.xit_offset.setDisabled(False)
+                # Set the band1 xit selected to True.
+                self.selected_xit_band1 = True
+            else:
+                # Set the xit offset dial to disabled.
+                self.xit_offset.setDisabled(True)
+                # Set the band1 xit selected to False.
+                self.selected_xit_band1 = False
+                # Set the xit offset value to zero.
+                self.xit_offset.setValue(0)
+                self.selected_xit_offset_band1 = 0
+        elif self.selected_band2:
+            if self.xit.isChecked():
+                self.xit_offset.setDisabled(False)
+                self.selected_xit_band2 = True
+            else:
+                self.xit_offset.setDisabled(True)
+                self.selected_xit_band2 = False
+                self.xit_offset.setValue(0)
+                self.selected_xit_offset_band2 = 0
+
+    def xit_offset_dial(self):
+        # Read the value of the XIT dial as it's turned.
+        value = self.xit_offset.value()
+        self.xit_lcd.display(value)
+
+        # Depending on which band is set update that bands offset variable value.
+        if self.selected_band1:
+            self.selected_xit_offset_band1 = value
+        elif self.selected_band2:
+            self.selected_xit_offset_band2 = value
+
+    def band(self, id):
+        # for each button in the QRadioButton group get the id and set which band is selected
+        # to True and the other band to False.
+        for button in self.bandButtonGroup.buttons():
+            if button is self.bandButtonGroup.button(id):
+                if id == 1:
+                    self.selected_band1 = True
+                    self.selected_band2 = False
+                elif id == 2:
+                    self.selected_band1 = False
+                    self.selected_band2 = True
+
+        if self.selected_band1:
+            # If band 1 is selected and xit is enabled
+            if self.selected_xit_band1:
+                # Set the xit lcd to the save band 1 offset value.
+                self.xit_lcd.display(self.selected_xit_offset_band1)
+                # Reset the XIT button to be checked.
+                self.xit.setChecked(True)
+                # Enable the XIT offset dial.
+                self.xit_offset.setDisabled(False)
+                # Reset the XIT dial to the value is was last set too.
+                self.xit_offset.setValue(self.selected_xit_offset_band1)
+            else:
+                # set the xit lcd back to displaying zero.
+                self.xit_lcd.display(0)
+                # Set the xit dial to disabled.
+                self.xit_offset.setDisabled(True)
+                # Set the xit dial back to zero.
+                self.xit_offset.setValue(0)
+                # Set the bands XIT offset value back to zero.
+                self.selected_xit_offset_band1 = 0
+                # Set the xit button to be unchecked or we'll interfere with the operation on the next selected band.
+                self.xit.setChecked(False)
+        elif self.selected_band2:
+            if self.selected_xit_band2:
+                self.xit_lcd.display(self.selected_xit_offset_band2)
+                self.xit.setChecked(True)
+                self.xit_offset.setDisabled(False)
+                self.xit_offset.setValue(self.selected_xit_offset_band2)
+            else:
+                self.xit_lcd.display(0)
+                self.xit_offset.setDisabled(True)
+                self.xit_offset.setValue(0)
+                self.selected_xit_offset_band2 = 0
+                self.xit.setChecked(False)
+
 
 if __name__ == "__main__":
+
     app = QApplication(sys.argv)
     window = QO100uplinkVFO()
     window.show()
