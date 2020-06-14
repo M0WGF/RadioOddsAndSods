@@ -35,49 +35,22 @@ class RigVFO(QThread):
     def __init__(self):
         QThread.__init__(self)
 
-        # Initiate the config parser.
-        config = configparser.RawConfigParser()
-
-        try:
-            # Open and read the config.ini file.
-            config.read('config.ini')
-            # Get the configuration from the ini file.
-            self.lo = int(config.get('CONFIG', 'LO'))
-            port = config.get('CONFIG', 'PORT')
-            baud = int(config.get('CONFIG', 'BAUD'))
-            self.poll = float(config.get('CONFIG', 'POLL'))
-            rig = config.get('CONFIG', 'RIG')
-        except configparser.NoSectionError:  # If the file or configuration is missing set some defaults.
-            print('Error Config Missing - See http://m0wgf.blogspot.com')
-            self.lo = 432000000
-            port = 'COM1'
-            baud = 38400
-            self.poll = 0.01
-            rig = 'K3S'
-
-        rig = rig.lower()
-
-        # Just a simple switch 0 or 1 switch for radio type along with command code and data length.
-        if rig == 'k3s':
-            self.VFO = 1  # Simple switch to tell later on if rig is Elecraft.
-            self.VFO_CMD = b'FA;'  # VFO Command that is sent to the radio.
-            self.VFO_DATA_LENGTH = 14  # The expected length of the response.
-        else:
-            self.VFO = 0  # Simple switch to tell later on if rig is Yaesu.
-            self.VFO_CMD = b'\x00\x00\x00\x00\x03'
-            self.VFO_DATA_LENGTH = 5  # The expected length of the response.
-
+        # Default VFO get settings.
+        self.VFO = 1  # Simple switch to tell later on if rig is Elecraft.
+        self.VFO_CMD = b'FA;'  # VFO Command that is sent to the radio.
+        self.VFO_DATA_LENGTH = 14  # The expected length of the response.
 
         # Initiate the serial port.
         self.serial_port = serial.Serial()
 
-        # Set the baud rate.
-        self.serial_port.baudrate = baud
+        # Set the poll rate.
+        self.poll = 0.01
 
-        # Set the serial port.
-        self.serial_port.port = port
+        # Set the class serial port
+        self.port = 'COM1'
 
-
+        # Set the class serial baudrate
+        self.baud = 9600
 
     def run(self):
 
@@ -100,6 +73,7 @@ class RigVFO(QThread):
                         data = data.decode('ascii')  # Decode bytes to ascii
                         result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
                     elif self.VFO == 0:
+                        #TODO remove print line only needed during testing.
                         print('FT817')
                         data = data[0], data[1], data[2], data[3]
                         result = "%02x%02x%02x%02x0" % data
@@ -116,6 +90,13 @@ class RigVFO(QThread):
                 self.RigDisconnect.emit()
 
     def connect(self):
+
+        # Set the baud rate.
+        self.serial_port.baudrate = self.baud
+
+        # Set the serial port.
+        self.serial_port.port = self.port
+
         try:
             self.serial_port.open()
         except Exception:
@@ -126,11 +107,50 @@ class QO100uplinkVFO(QWidget, Ui_Form):
     def __init__(self):
         super(QO100uplinkVFO, self).__init__()
 
+        # Initiate the rig_vfo class
+        self.rig_vfo = RigVFO()
+
+        # Initiate the config parser.
+        config = configparser.RawConfigParser()
+
+        try:
+            # Open and read the config.ini file.
+            config.read('config.ini')
+            # Get the configuration from the ini file.
+            lo = int(config.get('CONFIG', 'LO'))
+            comport = config.get('CONFIG', 'PORT')
+            baud = int(config.get('CONFIG', 'BAUD'))
+            poll = float(config.get('CONFIG', 'POLL'))
+            rig = config.get('CONFIG', 'RIG')
+            band1_name = config.get('CONFIG', 'IF1_BAND_NAME')
+            band2_name = config.get('CONFIG', 'IF2_BAND_NAME')
+        except configparser.NoSectionError:  # If the file or configuration is missing set some defaults.
+            print('Error Config Missing - See http://m0wgf.blogspot.com')
+            lo = 432000000
+            comport = 'COM1'
+            baud = 38400
+            poll = 0.01
+            rig = 'K3S'
+            band1_name = 'Band 1'
+            band2_name = 'Band 2'
+
         # Setup the Ui_Form display.
         self.setupUi(self)
 
         # Initiate the rig_vfo class
         self.rig_vfo = RigVFO()
+
+        # Initialise RigVFO class parameters.
+        self.rig_vfo.port = comport
+        self.rig_vfo.baud = int(baud)
+        self.rig_vfo.poll = float(poll)
+
+        if rig.lower() == 'k3s':
+            self.rig_vfo.VFO = 1
+        else:
+            self.rig_vfo.VFO = 2
+
+        # Set the RigVFO class parameters.
 
         if self.rig_vfo.VFO == 1:
             # Set the window title.
@@ -160,6 +180,10 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         self.bandButtonGroup.setId(self.band1, 1)
         self.bandButtonGroup.setId(self.band2, 2)
 
+        # Set RadioButton label text
+        self.band1.setText(band1_name)
+        self.band2.setText(band2_name)
+
         # Set Band1 RadioButton as checked.
         self.band1.setChecked(True)
 
@@ -172,7 +196,7 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         self.selected_xit_band2 = False
         self.selected_xit_offset_band2 = 0
 
-        # Define the uplink and downlink IF's using the LO parameter from the k3s_vfo class.
+        # Define the uplink and downlink IF's using the LO parameter from the rig_vfo class.
         self.uplink_if = 2400000000 - self.rig_vfo.lo
 
         self.downlink_if = 10489500000 - self.rig_vfo.lo
@@ -191,6 +215,12 @@ class QO100uplinkVFO(QWidget, Ui_Form):
 
         # a list to hold the individual chars in the data when converted to a string.
         data_list = []
+
+        # Add the XIT offset to the frequency data we have received from the rig.
+        if self.selected_band1:
+            data = int(data) + self.selected_xit_offset_band1
+        else:
+            data = int(data) + self.selected_xit_offset_band2
 
         # Ensure data is 12 chars long so fill space to the left of the data with zeros.
         data = str(data).zfill(12)
