@@ -163,7 +163,7 @@ class Ui_Form(object):
         self.downlinkLabel.setText(_translate("Form", "Hz"))
         self.groupBox_2.setTitle(_translate("Form", "TX"))
         self.uplinkLabel.setText(_translate("Form", "Hz"))
-        self.groupBox_3.setTitle(_translate("Form", "K3s VFO"))
+        self.groupBox_3.setTitle(_translate("Form", "RIG VFO"))
         self.vfoLabel.setText(_translate("Form", "Hz"))
         self.connectButton.setText(_translate("Form", "Connect"))
         self.groupBox_4.setTitle(_translate("Form", "Display Offset"))

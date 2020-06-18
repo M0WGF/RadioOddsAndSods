@@ -168,7 +168,7 @@ color: rgb(255, 255, 255);
     <string notr="true"/>
    </property>
    <property name="title">
-    <string>K3s VFO</string>
+    <string>RIG VFO</string>
    </property>
    <widget class="QLCDNumber" name="vfo">
     <property name="geometry">
