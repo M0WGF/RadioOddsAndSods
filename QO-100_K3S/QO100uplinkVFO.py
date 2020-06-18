@@ -21,7 +21,7 @@ import time
 import serial
 from re import sub
 import configparser
-from PyQt5.QtCore import QThread, pyqtSignal
+from PyQt5.QtCore import QThread, pyqtSignal, QTimer
 from PyQt5.QtWidgets import QWidget, QApplication
 from widget2 import Ui_Form
 
@@ -65,28 +65,30 @@ class RigVFO(QThread):
 
                     self.serial_port.write(self.VFO_CMD)  # Get VFO frequency from radio
 
-                    data = self.serial_port.read(self.VFO_DATA_LENGTH)  # Reads Bytes which is the max number of bytes the radio should respond with.
+                    data = self.serial_port.read(self.VFO_DATA_LENGTH)  # Reads Bytes which is the max number
+                    # of bytes the radio should respond with.
 
-                    print(data)
+                    # Set result to none so we can bypass emit if no data is received.
+                    result = None
 
                     if self.VFO == 1:
                         data = data.decode('ascii')  # Decode bytes to ascii
                         result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
                     elif self.VFO == 0:
-                        #TODO remove print line only needed during testing.
-                        print('FT817')
                         data = data[0], data[1], data[2], data[3]
                         result = "%02x%02x%02x%02x0" % data
-                        print(result)
 
                     # Emit the vfo reading.
-                    self.hertz.emit(int(result))
+                    if result is not None:
+                        self.hertz.emit(int(result))
+                    else:
+                        pass
 
                     # Sleep for time stated by poll.
                     time.sleep(self.poll)
                 else:
                     self.RigDisconnect.emit()
-            except Exception:
+            except serial.SerialException:
                 self.RigDisconnect.emit()
 
     def connect(self):
@@ -99,7 +101,7 @@ class RigVFO(QThread):
 
         try:
             self.serial_port.open()
-        except Exception:
+        except serial.SerialException:
             self.RigDisconnect.emit()
 
 
@@ -117,22 +119,28 @@ class QO100uplinkVFO(QWidget, Ui_Form):
             # Open and read the config.ini file.
             config.read('config.ini')
             # Get the configuration from the ini file.
-            lo = int(config.get('CONFIG', 'LO'))
             comport = config.get('CONFIG', 'PORT')
             baud = int(config.get('CONFIG', 'BAUD'))
             poll = float(config.get('CONFIG', 'POLL'))
             rig = config.get('CONFIG', 'RIG')
             band1_name = config.get('CONFIG', 'IF1_BAND_NAME')
             band2_name = config.get('CONFIG', 'IF2_BAND_NAME')
+            self.band1_IF_RX = int(config.get('CONFIG', 'IF1_RX_IF'))
+            self.band1_IF_TX = int(config.get('CONFIG', 'IF1_TX_IF'))
+            self.band2_IF_RX = int(config.get('CONFIG', 'IF2_RX_IF'))
+            self.band2_IF_TX = int(config.get('CONFIG', 'IF2_TX_IF'))
         except configparser.NoSectionError:  # If the file or configuration is missing set some defaults.
-            print('Error Config Missing - See http://m0wgf.blogspot.com')
-            lo = 432000000
+            # print('Error Config Missing - See http://m0wgf.blogspot.com')
             comport = 'COM1'
             baud = 38400
             poll = 0.01
             rig = 'K3S'
             band1_name = 'Band 1'
             band2_name = 'Band 2'
+            self.band1_IF_RX = 10489500000
+            self.band1_IF_TX = 2400000000
+            self.band2_IF_RX = 10489500000
+            self.band2_IF_TX = 2400000000
 
         # Setup the Ui_Form display.
         self.setupUi(self)
@@ -196,16 +204,16 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         self.selected_xit_band2 = False
         self.selected_xit_offset_band2 = 0
 
-        # Define the uplink and downlink IF's using the LO parameter from the rig_vfo class.
-        self.uplink_if = 2400000000 - self.rig_vfo.lo
+        # Variable to hold the current uplink and downlink frequencies.
+        self.uplink_data = 144300000
+        self.downlink_data = 144300000
 
-        self.downlink_if = 10489500000 - self.rig_vfo.lo
+        # Define thread list.
+        self.thread = []
 
     def start(self):
 
         # This function starts the thread to run the serial port K3s poller.
-
-        self.thread = []
         self.rig_vfo.hertz.connect(self.updater)
         self.rig_vfo.RigDisconnect.connect(self.error)
         self.thread.append(self.rig_vfo)
@@ -243,13 +251,39 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         # e.g GHz -> Hz
         return reversed(data_list)
 
+    def data_list_offset_updater(self, data):
+
+        # a list to hold the individual chars in the data when converted to a string.
+        data_list = []
+
+        # Ensure data is 12 chars long so fill space to the left of the data with zeros.
+        data = str(data).zfill(12)
+
+        # Simple counter so we can cut the data up into 3 char chunks
+        n = 0
+
+        # While n is less than 12 cut another 3 chars from data and append to data_list.
+        # Ok this is a bit barmy as I originally wrote this whole function in another way
+        # but I can't be bothered to rewrite it now!!
+        while n < 12:
+            next_string = data[(12 - n) - 3: (12 - n)]
+            # Increase where we are in the data by 3
+            n += 3
+
+            # Append the data to the data_list this will be in reverse order e.g Hz first then kHz ... etc.
+            data_list.append(next_string)
+
+        # send the data list back in reverse order that we stored it in the list.
+        # e.g GHz -> Hz
+        return reversed(data_list)
+
     def error(self):
         self.vfo.display('Error')
         self.uplink.display('Error')
         self.downlink.display('Error')
 
     def updater(self, data):
-        # This function gets called when the k3s_vfo hert slot emits data.
+        # This function gets called when the rig_vfo hertz slot emits data.
 
         # data is int, but data_list will return a list of strings with 3 chars in each element.
         freq_list = self.data_list(data)
@@ -258,21 +292,29 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         # Update display with frequency.
         self.vfo.display(freq)
 
-        # add uplink offset to the K3s frequency
-        uplink_data = data + self.uplink_if
-        freq_list = self.data_list(uplink_data)
+        # add uplink IF to the rigs frequency
+        if self.selected_band1:
+            self.uplink_data = data + self.band1_IF_TX
+        else:
+            self.uplink_data = data + self.band2_IF_TX
+
+        freq_list = self.data_list(self.uplink_data)
         freq = '.'.join(freq_list)
         self.uplink.display(freq)
 
-        # add downlink offset to the K3s frequency
-        downlink_data = data + self.downlink_if
-        freq_list = self.data_list(downlink_data)
+        # add downlink offset to the rigs frequency
+        if self.selected_band1:
+            self.downlink_data = data + self.band1_IF_RX
+        else:
+            self.downlink_data = data + self.band2_IF_RX
+
+        freq_list = self.data_list(self.downlink_data)
         freq = '.'.join(freq_list)
         self.downlink.display(freq)
 
     def xit_clarifier(self):
 
-        # If XIT butten is pressed set up XIT for the band selected.
+        # If XIT button is pressed set up XIT for the band selected.
 
         if self.selected_band1:
             # Check if xit button is checked.
@@ -309,6 +351,17 @@ class QO100uplinkVFO(QWidget, Ui_Form):
             self.selected_xit_offset_band1 = value
         elif self.selected_band2:
             self.selected_xit_offset_band2 = value
+
+        # Update the current Downlink and Uplink Frequencies.  We don't modify the exciters frequency readout.
+        updated_rx = self.downlink_data + int(value)
+        freq_list = self.data_list_offset_updater(updated_rx)
+        self.freq = '.'.join(freq_list)
+        self.downlink.display(self.freq)
+
+        updated_tx = self.uplink_data + int(value)
+        freq_list = self.data_list_offset_updater(updated_tx)
+        freq = '.'.join(freq_list)
+        self.uplink.display(freq)
 
     def band(self, id):
         # for each button in the QRadioButton group get the id and set which band is selected
