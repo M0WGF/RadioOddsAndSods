@@ -61,7 +61,12 @@ class RigVFO(QThread):
             try:
                 if self.serial_port.is_open:
 
-                    print('Port is open')
+                    if self.VFO == 1:
+                        self.VFO_CMD = b'FA;'  # VFO Command that is sent to the radio.
+                        self.VFO_DATA_LENGTH = 14  # The expected length of the response.
+                    else:
+                        self.VFO_CMD = b'\x00\x00\x00\x00\x03'
+                        self.VFO_DATA_LENGTH = 5  # The expected length of the response.
 
                     self.serial_port.write(self.VFO_CMD)  # Get VFO frequency from radio
 
@@ -74,7 +79,7 @@ class RigVFO(QThread):
                     if self.VFO == 1:
                         data = data.decode('ascii')  # Decode bytes to ascii
                         result = sub('[^0-9]', '', data)  # strip all characters unless it's numeric
-                    elif self.VFO == 0:
+                    elif self.VFO == 2:
                         data = data[0], data[1], data[2], data[3]
                         result = "%02x%02x%02x%02x0" % data
 
@@ -94,7 +99,7 @@ class RigVFO(QThread):
     def connect(self):
 
         # Set the baud rate.
-        self.serial_port.baudrate = self.baud
+        self.serial_port.baudrate = int(self.baud)
 
         # Set the serial port.
         self.serial_port.port = self.port
@@ -203,6 +208,9 @@ class QO100uplinkVFO(QWidget, Ui_Form):
         self.selected_band2 = False
         self.selected_xit_band2 = False
         self.selected_xit_offset_band2 = 0
+
+        # Variable to hold the current VFO frequency.
+        self.freq = 0
 
         # Variable to hold the current uplink and downlink frequencies.
         self.uplink_data = 144300000
